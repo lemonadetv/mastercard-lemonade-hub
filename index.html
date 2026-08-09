@@ -4,9 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lemonade Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  @font-face{
+    font-family: 'MarkForMC';
+    src: url('https://raw.githubusercontent.com/lemonadetv/lemonade-assets/main/mc-fonts/MarkForMC-Book.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face{
+    font-family: 'MarkForMC';
+    src: url('https://raw.githubusercontent.com/lemonadetv/lemonade-assets/main/mc-fonts/MarkForMC-Med.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+  @font-face{
+    font-family: 'MarkForMC';
+    src: url('https://raw.githubusercontent.com/lemonadetv/lemonade-assets/main/mc-fonts/MarkForMC-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+  }
+  @font-face{
+    font-family: 'MarkForMC';
+    src: url('https://raw.githubusercontent.com/lemonadetv/lemonade-assets/main/mc-fonts/MarkForMC-Black.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+  }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root{
@@ -29,7 +51,7 @@
   body{
     background: var(--bg);
     color: var(--text);
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     position: relative;
@@ -70,7 +92,7 @@
   }
   .mark{ display: inline-flex; align-items: center; gap: 10px; }
   .mark-word{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-weight: 700;
     font-size: 15px;
     letter-spacing: 0.01em;
@@ -79,7 +101,7 @@
   .mark-word b{ color: var(--mc-orange); font-weight: 700; }
 
   .eyebrow-tag{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -95,7 +117,7 @@
   }
 
   .hub-eyebrow{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -103,7 +125,7 @@
     margin-bottom: 16px;
   }
   .hub-title{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-weight: 600;
     font-size: clamp(28px, 3.6vw, 40px);
     letter-spacing: -0.01em;
@@ -165,7 +187,7 @@
   }
 
   .tool-name{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-weight: 600;
     font-size: 18px;
     margin-bottom: 9px;
@@ -192,7 +214,7 @@
   .tool-card:hover .tool-open svg{ transform: translate(2px, -2px); }
 
   .tool-url{
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'MarkForMC', sans-serif;
     font-size: 10.5px;
     color: var(--text-faint);
     margin-top: 12px;
