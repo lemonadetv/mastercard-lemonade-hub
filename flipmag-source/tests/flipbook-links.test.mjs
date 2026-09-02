@@ -41,5 +41,6 @@ test("keeps click-to-turn on free page areas", () => {
 test("moves arrows to the next complete editorial spread", () => {
   assert.doesNotMatch(reader, /controller\?\.flipNext/);
   assert.doesNotMatch(reader, /controller\?\.flipPrev/);
-  assert.match(reader, /controller\?\.flip\(physicalIndexForSource\(nextPage\), "top"\)/);
+  assert.match(reader, /const physicalIndex = physicalIndexForSource\(nextPage\)/);
+  assert.match(reader, /controller\?\.flip\(physicalIndex, "top"\)/);
 });
