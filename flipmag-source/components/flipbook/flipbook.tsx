@@ -100,10 +100,8 @@ export function Flipbook() {
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const [isFlipping, setIsFlipping] = useState(false);
-  const [flipTarget, setFlipTarget] = useState<number | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
-  const [bookInstance, setBookInstance] = useState(0);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [activeAudio, setActiveAudio] = useState<Hotspot | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -143,22 +141,18 @@ export function Flipbook() {
 
   const turnTo = useCallback(
     (nextPage: number) => {
-      if (nextPage < 1 || nextPage > PAGE_COUNT || nextPage === page || isFlipping) return;
+      if (nextPage < 1 || nextPage > PAGE_COUNT || nextPage === page) return;
       setActiveAudio(null);
       setAudioPlaying(false);
       const controller = flipbookRef.current?.pageFlip();
       if (Math.abs(nextPage - page) > 1) {
+        controller?.turnToPage(physicalIndexForSource(nextPage));
         setPage(nextPage);
-        setBookInstance((instance) => instance + 1);
-        setFlipTarget(null);
         return;
       }
-      setFlipTarget(nextPage);
-      if (page === 1 && nextPage === 2) controller?.flipNext("top");
-      else if (page === 2 && nextPage === 1) controller?.flipPrev("top");
-      else controller?.flip(physicalIndexForSource(nextPage), "top");
+      controller?.flip(physicalIndexForSource(nextPage), "top");
     },
-    [isFlipping, page],
+    [page],
   );
 
   const previous = useCallback(() => turnTo(page - 1), [page, turnTo]);
@@ -185,14 +179,6 @@ export function Flipbook() {
         image.src = pageImage(value);
       });
   }, [page]);
-
-  useEffect(() => {
-    if (bookInstance === 0) return;
-    const timer = window.setTimeout(() => {
-      flipbookRef.current?.pageFlip()?.turnToPage(physicalIndexForSource(page));
-    }, 120);
-    return () => window.clearTimeout(timer);
-  }, [bookInstance, page]);
 
   const playAudio = (hotspot: Hotspot) => {
     if (activeAudio?.id === hotspot.id && audioRef.current) {
@@ -275,8 +261,6 @@ export function Flipbook() {
     }
   };
 
-  const visualPage = isFlipping && flipTarget ? flipTarget : page;
-
   return (
     <main className="reader-shell">
       <header className="reader-header">
@@ -342,7 +326,7 @@ export function Flipbook() {
       )}
 
       <section className="book-viewport">
-        <button className="page-turn-zone page-turn-left" onClick={previous} disabled={page === 1 || isFlipping} aria-label="Previous page">
+        <button className="page-turn-zone page-turn-left" onClick={previous} disabled={page === 1} aria-label="Previous page">
           <ChevronLeft />
         </button>
 
@@ -414,9 +398,8 @@ export function Flipbook() {
               }}
             >
             <HTMLFlipBook
-              key={bookInstance}
               ref={flipbookRef}
-              className={`magazine-book ${visualPage === 1 ? "is-front-cover" : ""} ${visualPage === PAGE_COUNT ? "is-back-cover" : ""}`}
+              className={`magazine-book ${page === 1 ? "is-front-cover" : ""} ${page === PAGE_COUNT ? "is-back-cover" : ""}`}
               style={{}}
               renderOnlyPageLengthChange
               width={720}
@@ -438,7 +421,7 @@ export function Flipbook() {
               clickEventForward
               useMouseEvents
               swipeDistance={18}
-              showPageCorners
+              showPageCorners={false}
               disableFlipByClick
               onInit={(event: { object: FlipController }) => {
                 [0, PHYSICAL_PAGES.length - 1].forEach((index) => {
@@ -458,7 +441,6 @@ export function Flipbook() {
                 setIsFlipping(flipping);
                 if (event.data === "read") {
                   soundPlayedRef.current = false;
-                  setFlipTarget(null);
                 }
               }}
             >
@@ -487,7 +469,7 @@ export function Flipbook() {
           </div>
         </div>
 
-        <button className="page-turn-zone page-turn-right" onClick={next} disabled={page === PAGE_COUNT || isFlipping} aria-label="Next page">
+        <button className="page-turn-zone page-turn-right" onClick={next} disabled={page === PAGE_COUNT} aria-label="Next page">
           <ChevronRight />
         </button>
       </section>
