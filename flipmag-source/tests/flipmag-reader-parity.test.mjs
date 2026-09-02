@@ -8,11 +8,17 @@ const exporter = await readFile(new URL("../lib/export-flip-project.ts", import.
 const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("keeps online controls clickable at wide viewport sizes", () => {
-  assert.match(css, /\.reader-arrow\{position:relative;z-index:30;pointer-events:auto\}/);
+  assert.match(css, /\.reader-side-nav\{position:fixed;inset:72px 0;z-index:2147483000;pointer-events:none\}/);
+  assert.match(css, /\.reader-side-button\{[^}]*pointer-events:auto;[^}]*touch-action:manipulation/s);
+  assert.match(css, /\.reader-side-button\.is-previous\{left:16px\}/);
+  assert.match(css, /\.reader-side-button\.is-next\{right:16px\}/);
+  assert.match(reader, /className="reader-side-nav dynamic-side-nav"/);
+  assert.match(journal, /className="reader-side-nav journal-side-nav"/);
+  assert.match(reader, /className="reader-side-button is-next"/);
+  assert.match(journal, /className="reader-side-button is-next"/);
   assert.match(css, /\.dynamic-header\{position:relative;z-index:40/);
   assert.match(css, /\.dynamic-footer\{position:relative;z-index:40\}/);
   assert.match(css, /\.dynamic-scroll,\.dynamic-zoom\{position:relative;z-index:1;min-width:0\}/);
-  assert.match(css, /\.page-turn-zone\{z-index:30;pointer-events:auto\}/);
   assert.match(css, /\.reader-actions\{position:relative;z-index:50\}/);
   assert.doesNotMatch(reader, /flipping" \|\| event\.data === "user_fold/);
   assert.doesNotMatch(journal, /flipping" \|\| event\.data === "user_fold/);
@@ -21,6 +27,15 @@ test("keeps online controls clickable at wide viewport sizes", () => {
   assert.match(exporter, /showPageCorners:false/);
   assert.doesNotMatch(reader, /disabled=\{activePage === lastPage \|\| isFlipping\}/);
   assert.doesNotMatch(journal, /disabled=\{page === PAGE_COUNT \|\| isFlipping\}/);
+});
+
+test("recovers navigation if the flip engine stalls after a wide resize", () => {
+  assert.match(reader, /navigationFallback\.current = window\.setTimeout/);
+  assert.match(reader, /pageFlip\(\)\.turnToPage\(physicalIndex\)/);
+  assert.match(journal, /navigationFallbackRef\.current = window\.setTimeout/);
+  assert.match(journal, /pageFlip\(\)\?\.turnToPage\(physicalIndex\)/);
+  assert.match(exporter, /navigationFallback=setTimeout/);
+  assert.match(exporter, /flip\.turnToPage\(target\)/);
 });
 
 test("shows magazine name and active title beside Mastercard", () => {
@@ -38,6 +53,9 @@ test("export has the same reader controls", () => {
   }
   assert.match(exporter, /PAGES\.forEach\(\(p,index\)=>/);
   assert.match(exporter, /flip\.turnToPage\(physicalIndex\(p\.pageNumber\)\)/);
+  assert.match(exporter, /<nav class="side-controls"/);
+  assert.match(exporter, /\.side-controls\{position:fixed;[^}]*z-index:2147483000;[^}]*pointer-events:none/s);
+  assert.match(exporter, /\.arrow\{[^}]*pointer-events:auto/s);
 });
 
 test("page-turn sound is available and can be disabled online and in exports", () => {
