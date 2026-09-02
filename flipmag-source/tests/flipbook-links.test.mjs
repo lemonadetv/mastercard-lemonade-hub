@@ -20,13 +20,17 @@ test("protects hotspot clicks from the page-turn gesture", () => {
   assert.match(reader, /showPageCorners\s/);
   assert.match(reader, /disableFlipByClick\s/);
   assert.match(reader, /closest\("\.page-hotspot"\)/);
-  assert.match(reader, /onPointerDownCapture=\{protectHotspot\}/);
-  assert.match(reader, /onMouseDownCapture=\{protectHotspot\}/);
-  assert.match(reader, /onTouchStartCapture=\{protectHotspot\}/);
+  assert.match(reader, /onPointerDown=\{protectHotspot\}/);
+  assert.match(reader, /onMouseDown=\{protectHotspot\}/);
+  assert.match(reader, /onTouchStart=\{protectHotspot\}/);
+  assert.doesNotMatch(reader, /onPointerDownCapture=\{protectHotspot\}/);
+  assert.match(reader, /className=\{`book-scroll/);
+  assert.match(reader, /onPointerDown=\{\(event\) => \{/);
   assert.match(reader, /onClick=\{openHotspotLink\}/);
   assert.doesNotMatch(reader, /window\.open\(hotspot\.href/);
   assert.match(css, /\.page-hotspot > \*\s*\{\s*pointer-events: none;/);
   assert.match(css, /\.active-page-hotspots\s*\{[^}]*z-index: 1000;/s);
+  assert.match(css, /\.book-scroll\.is-pannable \.page-hotspot\s*\{[^}]*cursor: pointer !important;/s);
 });
 
 test("keeps click-to-turn on free page areas", () => {

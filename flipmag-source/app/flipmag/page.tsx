@@ -1,4 +1,5 @@
 import { BookOpen } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Page Flip Builder | Mastercard",
@@ -17,10 +18,10 @@ export default function FlipmagPage() {
       <section className="project-section">
         <div className="project-grid public-project-grid">
           <article className="project-card">
-            <a className="project-open" href="/flipmag/view/bi-journal-2026">
+            <Link className="project-open" href="/flipmag/view/bi-journal-2026">
               <div className="project-cover"><img src="/pages/page-01.webp" alt="Business Intelligence Journal / Agentic AI" /><span className="status-pill status-published">Published</span></div>
               <div className="project-copy"><h3>Business Intelligence Journal / Agentic AI</h3><p>2026 edition</p><div><span>16 pages</span><span>Interactive magazine</span></div></div>
-            </a>
+            </Link>
           </article>
         </div>
       </section>

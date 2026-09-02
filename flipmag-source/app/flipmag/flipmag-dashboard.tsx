@@ -8,6 +8,19 @@ import { Progress } from "@/components/ui/progress";
 import { slugify } from "@/lib/flipmag";
 
 type ProjectCard = { id: string; title: string; slug: string; description: string; status: "draft" | "published"; pageCount: number; versionCount: number; updatedAt: string };
+type AssetResult = { key: string; url: string };
+type MultipartStart = AssetResult & { uploadId: string };
+type UploadedPart = { part: number; etag: string };
+
+async function responseData(response: Response) {
+  const text = await response.text();
+  if (!text) return {} as Record<string, unknown>;
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    throw new Error(response.ok ? "The server returned an invalid response." : text);
+  }
+}
 
 export function FlipmagDashboard({ user }: { user: { name: string; email: string } }) {
   const [projects, setProjects] = useState<ProjectCard[]>([]);
@@ -36,9 +49,51 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
   const uploadAsset = async (projectId: string, file: File, kind: string) => {
     const form = new FormData(); form.append("projectId", projectId); form.append("kind", kind); form.append("file", file);
     const response = await fetch("/api/flipmag/assets", { method: "POST", body: form });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Upload failed");
-    return data as { key: string; url: string };
+    const data = await responseData(response);
+    if (!response.ok) throw new Error(String(data.error || "Upload failed"));
+    return data as AssetResult;
+  };
+
+  const uploadSourcePdf = async (projectId: string, file: File) => {
+    const startResponse = await fetch("/api/flipmag/assets/multipart?action=create", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ projectId, kind: "source", name: file.name, contentType: file.type || "application/pdf" }),
+    });
+    const started = await responseData(startResponse) as MultipartStart & { error?: string };
+    if (!startResponse.ok) throw new Error(started.error || "Could not start PDF upload");
+
+    const query = new URLSearchParams({ key: started.key, uploadId: started.uploadId });
+    const partSize = 5 * 1024 * 1024;
+    const partCount = Math.ceil(file.size / partSize);
+    const parts: UploadedPart[] = [];
+    try {
+      for (let index = 0; index < partCount; index += 1) {
+        const partNumber = index + 1;
+        setProgress(7 + Math.round((partNumber / partCount) * 4));
+        setProgressText(`Saving original PDF — part ${partNumber} of ${partCount}…`);
+        const response = await fetch(`/api/flipmag/assets/multipart?action=upload&${query}&partNumber=${partNumber}`, {
+          method: "PUT",
+          headers: { "content-type": "application/octet-stream" },
+          body: file.slice(index * partSize, Math.min(file.size, (index + 1) * partSize)),
+        });
+        const part = await responseData(response) as UploadedPart & { error?: string };
+        if (!response.ok) throw new Error(part.error || `Could not upload PDF part ${partNumber}`);
+        parts.push({ part: part.part, etag: part.etag });
+      }
+
+      const completeResponse = await fetch("/api/flipmag/assets/multipart?action=complete", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: started.key, uploadId: started.uploadId, parts }),
+      });
+      const completed = await responseData(completeResponse) as AssetResult & { error?: string };
+      if (!completeResponse.ok) throw new Error(completed.error || "Could not finish PDF upload");
+      return completed;
+    } catch (error) {
+      await fetch(`/api/flipmag/assets/multipart?action=abort&${query}`, { method: "DELETE" }).catch(() => undefined);
+      throw error;
+    }
   };
 
   const importPdf = async (file: File) => {
@@ -50,7 +105,7 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
       if (!create.ok) throw new Error(created.error || "Could not create project");
       const projectId = created.project.id as string;
       setProgress(7); setProgressText("Saving original PDF…");
-      const pdfAsset = await uploadAsset(projectId, file, "source");
+      const pdfAsset = await uploadSourcePdf(projectId, file);
       await fetch(`/api/flipmag/projects/${projectId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ sourcePdfKey: pdfAsset.key }) });
 
       setProgress(12); setProgressText("Reading pages and headings…");

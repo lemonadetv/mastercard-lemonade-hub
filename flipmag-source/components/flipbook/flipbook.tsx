@@ -349,7 +349,7 @@ export function Flipbook() {
             if (event.clientX < rect.left + rect.width / 2) previous();
             else next();
           }}
-          onPointerDownCapture={(event) => {
+          onPointerDown={(event) => {
             if ((event.target as HTMLElement).closest(".page-hotspot") || isFlipping) return;
             if (zoom > 100) {
               const scroll = bookScrollRef.current;
@@ -542,9 +542,9 @@ function PhysicalHotspot({ hotspot, side, onPlayAudio }: { hotspot: Hotspot; sid
         type="button"
         style={style}
         className={className}
-        onMouseDownCapture={protectHotspot}
-        onTouchStartCapture={protectHotspot}
-        onPointerDownCapture={protectHotspot}
+        onMouseDown={protectHotspot}
+        onTouchStart={protectHotspot}
+        onPointerDown={protectHotspot}
         onClick={(event) => { event.stopPropagation(); onPlayAudio(hotspot); }}
         title={hotspot.label}
       >
@@ -561,9 +561,9 @@ function PhysicalHotspot({ hotspot, side, onPlayAudio }: { hotspot: Hotspot; sid
       target={hotspot.target}
       rel="noreferrer"
       title={hotspot.label}
-      onMouseDownCapture={protectHotspot}
-      onTouchStartCapture={protectHotspot}
-      onPointerDownCapture={protectHotspot}
+      onMouseDown={protectHotspot}
+      onTouchStart={protectHotspot}
+      onPointerDown={protectHotspot}
       onClick={openHotspotLink}
     >
       {hotspot.source === "custom" && <ExternalLink />}

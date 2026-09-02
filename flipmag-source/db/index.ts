@@ -15,6 +15,18 @@ export function getDb() {
 type Bucket = {
   put: (key: string, value: ReadableStream | ArrayBuffer | Blob, options?: unknown) => Promise<unknown>;
   get: (key: string) => Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string } } | null>;
+  createMultipartUpload: (key: string, options?: unknown) => Promise<MultipartUpload>;
+  resumeMultipartUpload: (key: string, uploadId: string) => MultipartUpload;
+};
+
+export type UploadedPart = { part: number; etag: string };
+
+type MultipartUpload = {
+  key: string;
+  uploadId: string;
+  uploadPart: (partNumber: number, value: ReadableStream | ArrayBuffer | Blob) => Promise<UploadedPart>;
+  complete: (parts: UploadedPart[]) => Promise<unknown>;
+  abort: () => Promise<void>;
 };
 
 export function getBucket() {

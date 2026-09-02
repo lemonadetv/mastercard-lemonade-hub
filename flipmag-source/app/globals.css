@@ -350,6 +350,8 @@ textarea {
 
 .book-scroll.is-pannable .page-hotspot {
   pointer-events: auto;
+  cursor: pointer !important;
+  touch-action: manipulation;
 }
 
 .book-scroll.is-panning {
@@ -397,10 +399,12 @@ textarea {
   height: 100%;
   transform: translateZ(100px);
   pointer-events: none;
+  isolation: isolate;
 }
 
 .active-page-hotspots .page-hotspot {
   pointer-events: auto;
+  cursor: pointer !important;
 }
 
 .magazine-book {
