@@ -1671,3 +1671,4 @@ button.admin-hotspot {
 .flipmag-login-card input:focus{border-color:#ff5f00;box-shadow:0 0 0 3px #ff5f002b}
 .flipmag-login-card button{height:52px;background:linear-gradient(135deg,#ff5f00,#ff9a00);color:#111;border:0;margin-top:4px}
 .flipmag-login-error{color:#ff7676!important;font-size:14px!important;text-transform:none!important;letter-spacing:0!important;margin:0!important}
+.dynamic-book{transition:transform 1100ms cubic-bezier(.2,.62,.22,1);will-change:transform}.dynamic-book.is-front-cover{transform:translateX(-25%)}.dynamic-book.is-back-cover{transform:translateX(25%)}
