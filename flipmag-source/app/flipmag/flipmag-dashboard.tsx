@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { BookOpen, FileUp, LogOut, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -111,7 +112,19 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
       setProgress(12); setProgressText("Reading pages and headings…");
       const pdfjs = await import("pdfjs-dist");
       pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-      const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pdf = await pdfjs.getDocument({
+        data: await file.arrayBuffer(),
+        cMapUrl: "/pdfjs/cmaps/",
+        cMapPacked: true,
+        iccUrl: "/pdfjs/iccs/",
+        standardFontDataUrl: "/pdfjs/standard_fonts/",
+        wasmUrl: "/pdfjs/wasm/",
+        useWasm: true,
+        // Keep complex JPX images and transparency masks on the reliable
+        // main-thread canvas path. Several Mastercard PDFs depend on them.
+        isImageDecoderSupported: false,
+        isOffscreenCanvasSupported: false,
+      }).promise;
       const pages = [];
       const pdfHotspots: Array<Record<string, unknown>> = [];
       for (let index = 1; index <= pdf.numPages; index += 1) {
@@ -145,6 +158,8 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
           pdfHotspots.push({ pageNumber: index, kind: "link", label: `Open ${new URL(annotation.url).hostname || "link"}`, href: annotation.url, x: left, y: top, width, height, animation: "none", target: "_blank" });
         }
         page.cleanup();
+        canvas.width = 1;
+        canvas.height = 1;
       }
       const savePages = await fetch(`/api/flipmag/projects/${projectId}/pages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pages }) });
       const savedPages = await responseData(savePages) as { error?: string };
@@ -153,8 +168,9 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
         const response = await fetch(`/api/flipmag/projects/${projectId}/hotspots`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(hotspot) });
         if (!response.ok) throw new Error("A PDF link could not be preserved");
       }
+      await pdf.cleanup();
       setProgress(100); setProgressText("Import complete — opening editor…");
-      router.push(`/flipmag/projects/${projectId}`);
+      router.push(`/pageflip/projects/${projectId}`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Import failed");
       setProgress(null); setProgressText("");
@@ -172,8 +188,8 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
   return (
     <main className="builder-shell">
       <header className="builder-topbar">
-        <a className="builder-brand" href="/flipmag/admin"><img src="/assets/mastercard-symbol.png" alt="Mastercard" /><span>Page Flip Builder</span></a>
-        <div className="builder-user"><span>{user.name}</span><button type="button" aria-label="Sign out" onClick={async () => { await fetch("/api/flipmag/auth", { method: "DELETE" }); window.location.assign("/flipmag/login"); }}><LogOut /></button></div>
+        <Link className="builder-brand" href="/pageflip/admin"><img src="/assets/mastercard-symbol.png" alt="Mastercard" /><span>Page Flip Builder</span></Link>
+        <div className="builder-user"><span>{user.name}</span><button type="button" aria-label="Sign out" onClick={async () => { await fetch("/api/flipmag/auth", { method: "DELETE" }); window.location.assign("/pageflip/login"); }}><LogOut /></button></div>
       </header>
       <section className="builder-hero">
         <div><span className="eyebrow"><Sparkles /> Publishing workspace</span><h1>Your flip magazines</h1><p>Import, enrich, version and publish interactive magazines from one workspace.</p></div>
@@ -186,7 +202,7 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
         {loading ? <div className="empty-projects">Loading workspace…</div> : projects.length === 0 ? <div className="empty-projects"><BookOpen /><h3>Create your first flip</h3><p>Upload a PDF to begin.</p></div> : (
           <div className="project-grid">{projects.map((project) => (
             <article className="project-card" key={project.id}>
-              <button className="project-open" onClick={() => router.push(`/flipmag/projects/${project.id}`)}>
+              <button className="project-open" onClick={() => router.push(`/pageflip/projects/${project.id}`)}>
                 <div className="project-cover"><img src={project.slug === "bi-journal-2026" ? "/pages/page-01.webp" : "/file.svg"} alt="" /><span className={`status-pill status-${project.status}`}>{project.status}</span></div>
                 <div className="project-copy"><h3>{project.title}</h3><p>/{project.slug}</p><div><span>{project.pageCount} pages</span><span>{project.versionCount} versions</span></div></div>
               </button>
