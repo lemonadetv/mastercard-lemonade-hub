@@ -41,7 +41,6 @@ export async function isFlipmagAdminRequest(request: Request) {
 export async function requireFlipmagAdmin(returnTo: string) {
   const token = (await cookies()).get(FLIPMAG_SESSION_COOKIE)?.value ?? "";
   if (!configuredPassword() || !sameValue(token, await sessionToken())) {
-    redirect(`/flipmag/login?returnTo=${encodeURIComponent(returnTo)}`);
+    redirect(`/pageflip/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
 }
-
