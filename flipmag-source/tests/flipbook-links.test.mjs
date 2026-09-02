@@ -17,7 +17,7 @@ test("protects hotspot clicks from the page-turn gesture", () => {
   assert.match(reader, /hotspot\.page === page/);
   assert.match(reader, /side="single"/);
   assert.doesNotMatch(reader, /hotspots=\{hotspots\.filter/);
-  assert.match(reader, /showPageCorners\s/);
+  assert.match(reader, /showPageCorners=\{false\}/);
   assert.match(reader, /disableFlipByClick\s/);
   assert.match(reader, /closest\("\.page-hotspot"\)/);
   assert.match(reader, /onPointerDown=\{protectHotspot\}/);
@@ -39,7 +39,7 @@ test("keeps click-to-turn on free page areas", () => {
 });
 
 test("moves arrows to the next complete editorial spread", () => {
-  assert.match(reader, /page === 1 && nextPage === 2\) controller\?\.flipNext/);
-  assert.match(reader, /page === 2 && nextPage === 1\) controller\?\.flipPrev/);
+  assert.doesNotMatch(reader, /controller\?\.flipNext/);
+  assert.doesNotMatch(reader, /controller\?\.flipPrev/);
   assert.match(reader, /controller\?\.flip\(physicalIndexForSource\(nextPage\), "top"\)/);
 });
