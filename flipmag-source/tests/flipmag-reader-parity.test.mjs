@@ -20,22 +20,22 @@ test("keeps online controls clickable at wide viewport sizes", () => {
   assert.match(css, /\.dynamic-footer\{position:relative;z-index:40\}/);
   assert.match(css, /\.dynamic-scroll,\.dynamic-zoom\{position:relative;z-index:1;min-width:0\}/);
   assert.match(css, /\.reader-actions\{position:relative;z-index:50\}/);
-  assert.doesNotMatch(reader, /flipping" \|\| event\.data === "user_fold/);
-  assert.doesNotMatch(journal, /flipping" \|\| event\.data === "user_fold/);
   assert.match(reader, /showPageCorners=\{false\}/);
   assert.match(journal, /showPageCorners=\{false\}/);
   assert.match(exporter, /showPageCorners:false/);
-  assert.doesNotMatch(reader, /disabled=\{activePage === lastPage \|\| isFlipping\}/);
-  assert.doesNotMatch(journal, /disabled=\{page === PAGE_COUNT \|\| isFlipping\}/);
+  assert.match(reader, /disabled=\{!isFlipReady \|\| activePage === lastPage \|\| isFlipping\}/);
+  assert.match(journal, /disabled=\{!isFlipReady \|\| page === PAGE_COUNT \|\| isFlipping\}/);
 });
 
-test("recovers navigation if the flip engine stalls after a wide resize", () => {
-  assert.match(reader, /navigationFallback\.current = window\.setTimeout/);
-  assert.match(reader, /pageFlip\(\)\.turnToPage\(physicalIndex\)/);
-  assert.match(journal, /navigationFallbackRef\.current = window\.setTimeout/);
-  assert.match(journal, /pageFlip\(\)\?\.turnToPage\(physicalIndex\)/);
-  assert.match(exporter, /navigationFallback=setTimeout/);
-  assert.match(exporter, /flip\.turnToPage\(target\)/);
+test("keeps button and drag navigation in one ordered flip state", () => {
+  assert.match(reader, /navigationLocked\.current/);
+  assert.match(journal, /navigationLockedRef\.current/);
+  assert.match(reader, /renderOnlyPageLengthChange/);
+  assert.match(journal, /renderOnlyPageLengthChange/);
+  assert.match(reader, /event\.data === "flipping" \|\| event\.data === "user_fold"/);
+  assert.match(journal, /event\.data === "flipping" \|\| event\.data === "user_fold"/);
+  assert.match(exporter, /navLocked=e\.data!==\'read\'/);
+  assert.doesNotMatch(exporter, /navigationFallback/);
 });
 
 test("shows magazine name and active title beside Mastercard", () => {
