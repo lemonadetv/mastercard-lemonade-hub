@@ -18,6 +18,7 @@ import {
   Pause,
   Play,
   Volume2,
+  VolumeX,
   X,
   ZoomIn,
   ZoomOut,
@@ -105,10 +106,12 @@ export function Flipbook() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [activeAudio, setActiveAudio] = useState<Hotspot | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [turnSound, setTurnSound] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const panState = useRef<PanState | null>(null);
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const flipbookRef = useRef<FlipbookRef | null>(null);
+  const soundPlayedRef = useRef(false);
   const zoomRef = useRef(100);
   const zoomAnchorRef = useRef<{
     ratioX: number;
@@ -201,6 +204,32 @@ export function Flipbook() {
     window.setTimeout(() => void audioRef.current?.play(), 0);
   };
 
+  const playTurnSound = useCallback(() => {
+    if (!turnSound || typeof AudioContext === "undefined") return;
+    const context = new AudioContext();
+    const duration = 0.48;
+    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    for (let index = 0; index < channel.length; index += 1) {
+      const progress = index / channel.length;
+      channel[index] = (Math.random() * 2 - 1) * Math.sin(Math.PI * progress) * (1 - progress * 0.45) * 0.34;
+    }
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1150, context.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(420, context.currentTime + duration);
+    filter.Q.value = 0.72;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
+    source.buffer = buffer;
+    source.connect(filter).connect(gain).connect(context.destination);
+    source.start();
+    source.addEventListener("ended", () => void context.close(), { once: true });
+  }, [turnSound]);
+
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen();
@@ -273,10 +302,10 @@ export function Flipbook() {
           <span className="reader-brand-symbol">
             <img src="/assets/mastercard-symbol.png" alt="Mastercard" />
           </span>
+          <div className="reader-brand-copy"><strong>Business Intelligence Journal / Agentic AI</strong><small>{PAGE_TITLES[page]}</small></div>
         </div>
 
         <div className="reader-status" aria-live="polite">
-          <span title={PAGE_TITLES[page]}>{PAGE_TITLES[page]}</span>
           <div className="reader-progress" aria-hidden="true">
             <i style={{ width: `${(page / PAGE_COUNT) * 100}%` }} />
           </div>
@@ -284,6 +313,7 @@ export function Flipbook() {
         </div>
 
         <nav className="reader-actions" aria-label="Magazine tools">
+          <Button variant="ghost" size="icon" onClick={() => setTurnSound((enabled) => !enabled)} aria-label={turnSound ? "Turn page sound off" : "Turn page sound on"} title={turnSound ? "Page sound on" : "Page sound off"}>{turnSound ? <Volume2 /> : <VolumeX />}</Button>
           <Button
             variant="ghost"
             size="icon"
@@ -439,8 +469,15 @@ export function Flipbook() {
               onFlip={(event: { data: number }) => setPage(sourceForPhysicalIndex(event.data))}
               onChangeState={(event: { data: string }) => {
                 const flipping = event.data === "flipping" || event.data === "user_fold";
+                if (event.data === "flipping" && !soundPlayedRef.current) {
+                  soundPlayedRef.current = true;
+                  playTurnSound();
+                }
                 setIsFlipping(flipping);
-                if (event.data === "read") setFlipTarget(null);
+                if (event.data === "read") {
+                  soundPlayedRef.current = false;
+                  setFlipTarget(null);
+                }
               }}
             >
               {PHYSICAL_PAGES.map((physicalPage) => (
