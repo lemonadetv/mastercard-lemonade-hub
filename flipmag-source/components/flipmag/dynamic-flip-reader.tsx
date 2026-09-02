@@ -10,7 +10,7 @@ import { playPageTurnSound } from "@/lib/page-turn-sound";
 
 type Bundle = { project: FlipProject; pages: FlipPage[]; hotspots: FlipHotspot[] };
 type Physical = { key: string; source: number; side: "single" | "left" | "right" };
-type Controller = { flip: (page: number, corner?: "top" | "bottom") => void; flipNext: (corner?: "top" | "bottom") => void; flipPrev: (corner?: "top" | "bottom") => void; turnToPage: (page: number) => void; getPage: (index: number) => { setDensity: (value: "soft" | "hard") => void; setDrawingDensity: (value: "soft" | "hard") => void } };
+type Controller = { flip: (page: number, corner?: "top" | "bottom") => void; flipNext: (corner?: "top" | "bottom") => void; flipPrev: (corner?: "top" | "bottom") => void; turnToPage: (page: number) => void; getState: () => string; getSettings: () => { disableFlipByClick: boolean }; getPage: (index: number) => { setDensity: (value: "soft" | "hard") => void; setDrawingDensity: (value: "soft" | "hard") => void } };
 type FlipRef = { pageFlip: () => Controller };
 
 export function DynamicFlipReader({ slug }: { slug: string }) {
@@ -21,10 +21,12 @@ export function DynamicFlipReader({ slug }: { slug: string }) {
   const [media, setMedia] = useState<FlipHotspot | null>(null);
   const [playing, setPlaying] = useState(false);
   const [panning, setPanning] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [isFlipReady, setIsFlipReady] = useState(false);
   const [turnSound, setTurnSound] = useState(true);
   const flipRef = useRef<FlipRef | null>(null);
   const sourcePageRef = useRef(1);
-  const navigationFallback = useRef<number | null>(null);
+  const navigationLocked = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const zoomRef = useRef(100);
   const pan = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
@@ -40,27 +42,30 @@ export function DynamicFlipReader({ slug }: { slug: string }) {
 
   useEffect(() => { fetch(`/api/flipmag/public/${encodeURIComponent(slug)}`).then(async (response) => { if (!response.ok) throw new Error(); return response.json(); }).then(setBundle).catch(() => setBundle(null)); }, [slug]);
   useEffect(() => { sourcePageRef.current = sourcePage; }, [sourcePage]);
-  useEffect(() => () => { if (navigationFallback.current !== null) window.clearTimeout(navigationFallback.current); }, []);
   const physical = useMemo<Physical[]>(() => bundle ? bundle.pages.flatMap((page) => page.layout === "spread" ? [{ key: `${page.id}-l`, source: page.pageNumber, side: "left" as const }, { key: `${page.id}-r`, source: page.pageNumber, side: "right" as const }] : [{ key: page.id, source: page.pageNumber, side: "single" as const }]) : [], [bundle]);
   const indexForSource = useCallback((page: number) => Math.max(0, physical.findIndex((item) => item.source === page)), [physical]);
   const page = bundle?.pages.find((item) => item.pageNumber === sourcePage) ?? bundle?.pages[0];
 
   const go = useCallback((next: number) => {
-    if (!bundle || next < 1 || next > bundle.pages.length || next === sourcePage) return;
+    if (!bundle || next < 1 || next > bundle.pages.length || next === sourcePage || navigationLocked.current) return;
     setMedia(null);
     if (Math.abs(next - sourcePage) === 1) {
       const controller = flipRef.current?.pageFlip();
-      const physicalIndex = indexForSource(next);
-      controller?.flip(physicalIndex, "top");
-      if (navigationFallback.current !== null) window.clearTimeout(navigationFallback.current);
-      navigationFallback.current = window.setTimeout(() => {
-        if (sourcePageRef.current !== next) {
-          flipRef.current?.pageFlip().turnToPage(physicalIndex);
-          sourcePageRef.current = next;
-          setSourcePage(next);
+      if (!controller) return;
+      navigationLocked.current = true;
+      setIsFlipping(true);
+      const settings = controller.getSettings();
+      const clickWasDisabled = settings.disableFlipByClick;
+      settings.disableFlipByClick = false;
+      try { if (next > sourcePage) controller.flipNext("top"); else controller.flipPrev("top"); }
+      finally { settings.disableFlipByClick = clickWasDisabled; }
+      window.setTimeout(() => {
+        const activeController = flipRef.current?.pageFlip();
+        if (activeController?.getState() === "read" && sourcePageRef.current === sourcePage) {
+          navigationLocked.current = false;
+          setIsFlipping(false);
         }
-        navigationFallback.current = null;
-      }, 1500);
+      }, 120);
     } else { flipRef.current?.pageFlip().turnToPage(indexForSource(next)); sourcePageRef.current = next; setSourcePage(next); }
   }, [bundle, sourcePage, indexForSource]);
 
@@ -82,10 +87,10 @@ export function DynamicFlipReader({ slug }: { slug: string }) {
     <main className="dynamic-reader">
       <header className="dynamic-header"><div className="dynamic-brand"><img src="/assets/mastercard-symbol.png" alt="Mastercard" /><div><b>{bundle.project.title}</b><small>{page?.title || bundle.project.title}</small></div></div><div className="dynamic-status"><span>{activePage} / {bundle.pages.length}</span><i><b style={{ width: `${activePage / bundle.pages.length * 100}%` }} /></i></div><nav><Button variant="ghost" size="icon" onClick={() => setTurnSound((enabled) => !enabled)} aria-label={turnSound ? "Turn page sound off" : "Turn page sound on"} title={turnSound ? "Page sound on" : "Page sound off"}>{turnSound ? <Volume2 /> : <VolumeX />}</Button><Button variant="ghost" size="icon" onClick={() => setGrid(!grid)} aria-label="All pages"><Grid2X2 /></Button><Button variant="ghost" size="icon" onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()} aria-label="Fullscreen"><Fullscreen /></Button></nav></header>
       {grid && <aside className="dynamic-grid"><div><strong>All pages</strong><Button variant="ghost" size="icon" onClick={() => setGrid(false)}><X /></Button></div><section>{bundle.pages.map((item) => <button key={item.id} className={item.pageNumber === sourcePage ? "active" : ""} onClick={() => { go(item.pageNumber); setGrid(false); }}><img src={assetUrl(item.imageKey)} alt="" /><span>{item.pageNumber}. {item.title}</span></button>)}</section></aside>}
-      <nav className="reader-side-nav dynamic-side-nav" aria-label="Page navigation"><button type="button" className="reader-side-button is-previous" disabled={activePage === firstPage} onClick={() => go(activePage - 1)} aria-label="Previous page"><ChevronLeft /></button><button type="button" className="reader-side-button is-next" disabled={activePage === lastPage} onClick={() => go(activePage + 1)} aria-label="Next page"><ChevronRight /></button></nav>
+      <nav className="reader-side-nav dynamic-side-nav" aria-label="Page navigation"><button type="button" className="reader-side-button is-previous" disabled={!isFlipReady || activePage === firstPage || isFlipping} onClick={() => go(activePage - 1)} aria-label="Previous page"><ChevronLeft /></button><button type="button" className="reader-side-button is-next" disabled={!isFlipReady || activePage === lastPage || isFlipping} onClick={() => go(activePage + 1)} aria-label="Next page"><ChevronRight /></button></nav>
       <section className="dynamic-stage">
         <div ref={scrollRef} className={`dynamic-scroll ${zoom > 100 ? "pannable" : ""} ${panning ? "panning" : ""}`} onPointerDownCapture={(event) => { if (zoom <= 100 || (event.target as HTMLElement).closest(".dynamic-hotspot")) return; const node = scrollRef.current; if (!node) return; pan.current = { x: event.clientX, y: event.clientY, left: node.scrollLeft, top: node.scrollTop }; setPanning(true); event.currentTarget.setPointerCapture(event.pointerId); event.stopPropagation(); }} onPointerMove={(event) => { const start = pan.current; const node = scrollRef.current; if (!start || !node) return; node.scrollLeft = start.left - (event.clientX - start.x); node.scrollTop = start.top - (event.clientY - start.y); }} onPointerUp={(event) => { pan.current = null; setPanning(false); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}>
-          <div className="dynamic-zoom" style={{ transform: `scale(${zoom / 100})` }}><HTMLFlipBook ref={flipRef} className={`dynamic-book ${activePage === firstPage ? "is-front-cover" : ""} ${activePage === lastPage ? "is-back-cover" : ""}`} style={{}} width={720} height={960} size="stretch" minWidth={260} maxWidth={720} minHeight={347} maxHeight={960} startPage={indexForSource(sourcePage)} drawShadow flippingTime={1100} usePortrait startZIndex={1} autoSize maxShadowOpacity={.78} showCover mobileScrollSupport={false} clickEventForward useMouseEvents swipeDistance={18} showPageCorners={false} disableFlipByClick={zoom > 100} onInit={(event: { object: Controller }) => { if (physical.length) { [0, physical.length - 1].forEach((index) => { const sheet = event.object.getPage(index); sheet.setDensity("soft"); sheet.setDrawingDensity("soft"); }); } }} onFlip={(event: { data: number }) => { const nextSource = physical[event.data]?.source || firstPage || 1; sourcePageRef.current = nextSource; setSourcePage(nextSource); }} onChangeState={(event: { data: string }) => { if (event.data === "flipping" && !soundPlayed.current) { soundPlayed.current = true; playTurnSound(); } if (event.data === "read") { soundPlayed.current = false; } }}>
+          <div className="dynamic-zoom" style={{ transform: `scale(${zoom / 100})` }}><HTMLFlipBook ref={flipRef} className={`dynamic-book ${activePage === firstPage ? "is-front-cover" : ""} ${activePage === lastPage ? "is-back-cover" : ""}`} style={{}} renderOnlyPageLengthChange width={720} height={960} size="stretch" minWidth={260} maxWidth={720} minHeight={347} maxHeight={960} startPage={indexForSource(sourcePage)} drawShadow flippingTime={1100} usePortrait startZIndex={1} autoSize maxShadowOpacity={.78} showCover mobileScrollSupport={false} clickEventForward useMouseEvents swipeDistance={18} showPageCorners={false} disableFlipByClick={zoom > 100} onInit={(event: { object: Controller }) => { if (physical.length) { [0, physical.length - 1].forEach((index) => { const sheet = event.object.getPage(index); sheet.setDensity("soft"); sheet.setDrawingDensity("soft"); }); } setIsFlipReady(true); }} onFlip={(event: { data: number }) => { const nextSource = physical[event.data]?.source || firstPage || 1; sourcePageRef.current = nextSource; setSourcePage(nextSource); }} onChangeState={(event: { data: string }) => { const flipping = event.data === "flipping" || event.data === "user_fold"; navigationLocked.current = flipping; setIsFlipping(flipping); if (event.data === "flipping" && !soundPlayed.current) { soundPlayed.current = true; playTurnSound(); } if (event.data === "read") { soundPlayed.current = false; } }}>
             {physical.map((item) => { const source = bundle.pages.find((candidate) => candidate.pageNumber === item.source)!; return <DynamicPage key={item.key} ref={undefined} item={item} page={source} hotspots={bundle.hotspots.filter((spot) => spot.pageNumber === item.source)} onMedia={(spot) => { setMedia(spot); setPlaying(spot.kind === "audio"); }} />; })}
           </HTMLFlipBook></div>
         </div>
