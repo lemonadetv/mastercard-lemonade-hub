@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/flipmag",
+      "destination": "https://mbi-magazine-2026.lemonade.chatgpt.site/flipmag"
+    },
+    {
+      "source": "/flipmag/:path*",
+      "destination": "https://mbi-magazine-2026.lemonade.chatgpt.site/flipmag/:path*"
+    }
+  ]
+}
