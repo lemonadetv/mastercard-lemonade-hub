@@ -18,5 +18,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const now = new Date().toISOString();
   await db.insert(flipVersions).values({ id: versionId, projectId: id, versionNumber, label, snapshotJson: snapshot, createdBy: email, createdAt: now });
   await db.update(flipProjects).set({ status: "published", publishedVersionId: versionId, publishedAt: now, updatedAt: now }).where(eq(flipProjects.id, id));
-  return Response.json({ ok: true, versionNumber, url: `/flipmag/view/${bundle.project.slug}` });
+  return Response.json({ ok: true, versionNumber, url: `/pageflip/${bundle.project.slug}` });
 }
