@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ExternalLink, Film, Link2, Music2, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, ExternalLink, Film, Link2, Music2, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { assetUrl, FlipHotspot, FlipPage, FlipProject } from "@/lib/flipmag";
+import { downloadFlipProjectZip } from "@/lib/export-flip-project";
 
 type Bundle = { project: FlipProject; pages: FlipPage[]; hotspots: FlipHotspot[]; versions: Array<{ id: string; versionNumber: number; label: string; createdAt: string }> };
 const blank = (projectId: string, pageNumber: number, x: number, y: number): FlipHotspot => ({ id: crypto.randomUUID(), projectId, pageNumber, kind: "link", label: "Open link", href: "", x, y, width: .18, height: .08, animation: "glow", target: "_blank" });
@@ -16,6 +17,7 @@ export function FlipProjectEditor({ projectId }: { projectId: string }) {
   const [pageNumber, setPageNumber] = useState(1);
   const [selected, setSelected] = useState<FlipHotspot | null>(null);
   const [busy, setBusy] = useState("");
+  const [copied, setCopied] = useState(false);
   const mediaRef = useRef<HTMLInputElement | null>(null);
   const load = async () => { const response = await fetch(`/api/flipmag/projects/${projectId}`); if (response.ok) setBundle(await response.json()); };
   useEffect(() => {
@@ -52,8 +54,16 @@ export function FlipProjectEditor({ projectId }: { projectId: string }) {
     setBusy("Publishing version…"); const response = await fetch(`/api/flipmag/projects/${projectId}/publish`, { method: "POST" }); const data = await response.json(); setBusy("");
     if (!response.ok) return alert(data.error); await load(); window.open(data.url, "_blank", "noopener,noreferrer");
   };
+  const downloadHtml = async () => {
+    if (!bundle) return;
+    try { setBusy("Building HTML package…"); await downloadFlipProjectZip(bundle.project, bundle.pages, bundle.hotspots); }
+    catch (error) { alert(error instanceof Error ? error.message : "Could not build the HTML package"); }
+    finally { setBusy(""); }
+  };
 
   if (!bundle) return <main className="editor-loading">Loading Page Flip Builder…</main>;
+  const publicUrl = `https://mastercard.lemonade-hq.com/flipmag/view/${bundle.project.slug}`;
+  const iframeCode = `<iframe src="${publicUrl}" title="${bundle.project.title.replaceAll('"', '&quot;')}" width="100%" height="720" frameborder="0" allow="fullscreen" loading="lazy"></iframe>`;
   return (
     <main className="editor-shell">
       <header className="editor-topbar">
@@ -89,6 +99,17 @@ export function FlipProjectEditor({ projectId }: { projectId: string }) {
           <div className="property-divider" /><div className="property-heading"><strong>Versions</strong></div>
           <div className="version-list">{bundle.versions.length ? bundle.versions.map((version) => <div key={version.id}><span>v{version.versionNumber}</span><p>{version.label}<small>{new Date(version.createdAt).toLocaleString()}</small></p></div>) : <p>No published versions yet.</p>}</div>
           {bundle.project.status === "published" && <a className="public-link" href={`/flipmag/view/${bundle.project.slug}`} target="_blank" rel="noreferrer"><ExternalLink /> Open published flip</a>}
+          <div className="property-divider" />
+          <section className="project-output">
+            <div className="property-heading"><strong>Client output</strong></div>
+            <p>Embed this published flip on any website or download a self-contained HTML package.</p>
+            <label>Embed code<Textarea value={iframeCode} readOnly aria-label="Embed code" /></label>
+            <div className="project-output-actions">
+              <Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(iframeCode); setCopied(true); setTimeout(() => setCopied(false), 1800); }}>{copied ? <Check /> : <Copy />} {copied ? "Copied" : "Copy embed"}</Button>
+              <Button variant="outline" onClick={() => void downloadHtml()}><Download /> Download HTML ZIP</Button>
+            </div>
+            {bundle.project.status !== "published" && <small>Publish a version before using the public iframe.</small>}
+          </section>
         </aside>
       </div>
     </main>
