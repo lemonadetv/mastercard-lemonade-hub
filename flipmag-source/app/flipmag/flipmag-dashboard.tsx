@@ -147,7 +147,8 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
         page.cleanup();
       }
       const savePages = await fetch(`/api/flipmag/projects/${projectId}/pages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pages }) });
-      if (!savePages.ok) throw new Error("Could not save rendered pages");
+      const savedPages = await responseData(savePages) as { error?: string };
+      if (!savePages.ok) throw new Error(savedPages.error || "Could not save rendered pages");
       for (const hotspot of pdfHotspots) {
         const response = await fetch(`/api/flipmag/projects/${projectId}/hotspots`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(hotspot) });
         if (!response.ok) throw new Error("A PDF link could not be preserved");
