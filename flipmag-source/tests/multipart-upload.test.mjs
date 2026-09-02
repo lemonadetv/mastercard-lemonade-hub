@@ -12,6 +12,7 @@ test("uploads source PDFs in request-safe R2 multipart chunks", () => {
   assert.match(dashboard, /action=upload/);
   assert.match(dashboard, /action=complete/);
   assert.match(dashboard, /action=abort/);
+  assert.match(dashboard, /parts\.push\(\{ partNumber: part\.partNumber, etag: part\.etag \}\)/);
   assert.match(route, /createMultipartUpload/);
   assert.match(route, /uploadPart\(partNumber, request\.body\)/);
   assert.match(route, /\.complete\(parts\)/);

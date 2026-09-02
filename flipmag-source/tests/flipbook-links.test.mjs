@@ -37,3 +37,9 @@ test("keeps click-to-turn on free page areas", () => {
   assert.match(reader, /event\.clientX < rect\.left \+ rect\.width \/ 2\) previous\(\)/);
   assert.match(reader, /else next\(\)/);
 });
+
+test("moves arrows to the next complete editorial spread", () => {
+  assert.match(reader, /page === 1 && nextPage === 2\) controller\?\.flipNext/);
+  assert.match(reader, /page === 2 && nextPage === 1\) controller\?\.flipPrev/);
+  assert.match(reader, /controller\?\.flip\(physicalIndexForSource\(nextPage\), "top"\)/);
+});

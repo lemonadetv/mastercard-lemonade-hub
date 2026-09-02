@@ -19,7 +19,7 @@ type Bucket = {
   resumeMultipartUpload: (key: string, uploadId: string) => MultipartUpload;
 };
 
-export type UploadedPart = { part: number; etag: string };
+export type UploadedPart = { partNumber: number; etag: string };
 
 type MultipartUpload = {
   key: string;

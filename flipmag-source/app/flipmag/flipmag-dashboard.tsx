@@ -10,7 +10,7 @@ import { slugify } from "@/lib/flipmag";
 type ProjectCard = { id: string; title: string; slug: string; description: string; status: "draft" | "published"; pageCount: number; versionCount: number; updatedAt: string };
 type AssetResult = { key: string; url: string };
 type MultipartStart = AssetResult & { uploadId: string };
-type UploadedPart = { part: number; etag: string };
+type UploadedPart = { partNumber: number; etag: string };
 
 async function responseData(response: Response) {
   const text = await response.text();
@@ -79,7 +79,7 @@ export function FlipmagDashboard({ user }: { user: { name: string; email: string
         });
         const part = await responseData(response) as UploadedPart & { error?: string };
         if (!response.ok) throw new Error(part.error || `Could not upload PDF part ${partNumber}`);
-        parts.push({ part: part.part, etag: part.etag });
+        parts.push({ partNumber: part.partNumber, etag: part.etag });
       }
 
       const completeResponse = await fetch("/api/flipmag/assets/multipart?action=complete", {

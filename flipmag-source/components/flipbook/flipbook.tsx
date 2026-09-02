@@ -149,8 +149,9 @@ export function Flipbook() {
         return;
       }
       setFlipTarget(nextPage);
-      if (nextPage > page) controller?.flipNext("top");
-      else controller?.flipPrev("top");
+      if (page === 1 && nextPage === 2) controller?.flipNext("top");
+      else if (page === 2 && nextPage === 1) controller?.flipPrev("top");
+      else controller?.flip(physicalIndexForSource(nextPage), "top");
     },
     [isFlipping, page],
   );
