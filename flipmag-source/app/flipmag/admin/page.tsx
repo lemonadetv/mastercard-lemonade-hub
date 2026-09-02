@@ -7,6 +7,6 @@ export const metadata = {
 };
 
 export default async function FlipmagAdminPage() {
-  await requireFlipmagAdmin("/flipmag/admin");
+  await requireFlipmagAdmin("/pageflip/admin");
   return <FlipmagDashboard user={{ name: "Lemonade", email: "" }} />;
 }
