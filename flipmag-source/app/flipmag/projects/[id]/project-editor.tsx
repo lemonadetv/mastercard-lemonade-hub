@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowLeft, Check, Copy, Download, ExternalLink, Film, Link2, Music2, Plus, Save, Send, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,12 +63,12 @@ export function FlipProjectEditor({ projectId }: { projectId: string }) {
   };
 
   if (!bundle) return <main className="editor-loading">Loading Page Flip Builder…</main>;
-  const publicUrl = `https://mastercard.lemonade-hq.com/flipmag/view/${bundle.project.slug}`;
+  const publicUrl = `https://mastercard.lemonade-us.com/pageflip/${bundle.project.slug}`;
   const iframeCode = `<iframe src="${publicUrl}" title="${bundle.project.title.replaceAll('"', '&quot;')}" width="100%" height="720" frameborder="0" allow="fullscreen" loading="lazy"></iframe>`;
   return (
     <main className="editor-shell">
       <header className="editor-topbar">
-        <a href="/flipmag/admin" className="editor-back"><ArrowLeft /> Projects</a>
+        <Link href="/pageflip/admin" className="editor-back"><ArrowLeft /> Projects</Link>
         <div className="editor-title"><Input value={bundle.project.title} onChange={(e) => setBundle({ ...bundle, project: { ...bundle.project, title: e.target.value } })} /><span>{busy || `${bundle.pages.length} pages · ${bundle.project.status}`}</span></div>
         <div className="editor-actions"><Button variant="outline" onClick={() => void patchProject()}><Save /> Save</Button><Button onClick={() => void publish()}><Send /> Publish version</Button></div>
       </header>
@@ -98,7 +99,7 @@ export function FlipProjectEditor({ projectId }: { projectId: string }) {
           </> : <div className="property-empty"><Link2 /><p>Select an interaction or click the page to add one.</p></div>}
           <div className="property-divider" /><div className="property-heading"><strong>Versions</strong></div>
           <div className="version-list">{bundle.versions.length ? bundle.versions.map((version) => <div key={version.id}><span>v{version.versionNumber}</span><p>{version.label}<small>{new Date(version.createdAt).toLocaleString()}</small></p></div>) : <p>No published versions yet.</p>}</div>
-          {bundle.project.status === "published" && <a className="public-link" href={`/flipmag/view/${bundle.project.slug}`} target="_blank" rel="noreferrer"><ExternalLink /> Open published flip</a>}
+          {bundle.project.status === "published" && <a className="public-link" href={`/pageflip/${bundle.project.slug}`} target="_blank" rel="noreferrer"><ExternalLink /> Open published flip</a>}
           <div className="property-divider" />
           <section className="project-output">
             <div className="property-heading"><strong>Client output</strong></div>
