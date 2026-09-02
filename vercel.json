@@ -1,12 +1,44 @@
 {
   "rewrites": [
     {
+      "source": "/pageflip",
+      "destination": "https://mastercard.lemonade-hq.com/pageflip"
+    },
+    {
+      "source": "/pageflip/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/pageflip/:path*"
+    },
+    {
+      "source": "/api/flipmag/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/api/flipmag/:path*"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/assets/:path*"
+    },
+    {
+      "source": "/pages/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/pages/:path*"
+    },
+    {
+      "source": "/fonts/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/fonts/:path*"
+    },
+    {
+      "source": "/vendor/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/vendor/:path*"
+    },
+    {
+      "source": "/pdfjs/:path*",
+      "destination": "https://mastercard.lemonade-hq.com/pdfjs/:path*"
+    },
+    {
       "source": "/flipmag",
-      "destination": "https://mbi-magazine-2026.lemonade.chatgpt.site/flipmag"
+      "destination": "https://mastercard.lemonade-hq.com/flipmag"
     },
     {
       "source": "/flipmag/:path*",
-      "destination": "https://mbi-magazine-2026.lemonade.chatgpt.site/flipmag/:path*"
+      "destination": "https://mastercard.lemonade-hq.com/flipmag/:path*"
     }
   ]
 }
