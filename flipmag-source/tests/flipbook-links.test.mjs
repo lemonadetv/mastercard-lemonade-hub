@@ -39,8 +39,8 @@ test("keeps click-to-turn on free page areas", () => {
 });
 
 test("moves arrows to the next complete editorial spread", () => {
-  assert.doesNotMatch(reader, /controller\?\.flipNext/);
-  assert.doesNotMatch(reader, /controller\?\.flipPrev/);
-  assert.match(reader, /const physicalIndex = physicalIndexForSource\(nextPage\)/);
-  assert.match(reader, /controller\?\.flip\(physicalIndex, "top"\)/);
+  assert.match(reader, /if \(nextPage > page\) controller\.flipNext\("top"\)/);
+  assert.match(reader, /else controller\.flipPrev\("top"\)/);
+  assert.match(reader, /settings\.disableFlipByClick = false/);
+  assert.doesNotMatch(reader, /navigationFallback/);
 });
