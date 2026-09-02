@@ -6,13 +6,12 @@ const reader = await readFile(new URL("../components/flipmag/dynamic-flip-reader
 const exporter = await readFile(new URL("../lib/export-flip-project.ts", import.meta.url), "utf8");
 const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
-test("navigates every adjacent page through its physical spread index", () => {
-  assert.match(reader, /const physicalIndex = indexForSource\(next\)/);
-  assert.match(reader, /controller\?\.flip\(physicalIndex, "top"\)/);
+test("navigates adjacent pages from the flip engine's current spread", () => {
+  assert.match(reader, /if \(next > sourcePage\) controller\.flipNext\("top"\)/);
+  assert.match(reader, /else controller\.flipPrev\("top"\)/);
   assert.doesNotMatch(reader, /sourcePage === first && next === second/);
   assert.doesNotMatch(reader, /sourcePage === second && next === first/);
-  assert.match(exporter, /const target=physicalIndex\(next\.pageNumber\)/);
-  assert.match(exporter, /flip\.flip\(target,'top'\)/);
+  assert.match(exporter, /if\(delta>0\)flip\.flipNext\('top'\);else flip\.flipPrev\('top'\)/);
 });
 
 test("centers front and back covers during both transition directions", () => {
