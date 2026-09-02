@@ -110,6 +110,8 @@ export function Flipbook() {
   const panState = useRef<PanState | null>(null);
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const flipbookRef = useRef<FlipbookRef | null>(null);
+  const pageRef = useRef(1);
+  const navigationFallbackRef = useRef<number | null>(null);
   const soundPlayedRef = useRef(false);
   const soundVariantRef = useRef(0);
   const zoomRef = useRef(100);
@@ -123,6 +125,16 @@ export function Flipbook() {
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => () => {
+    if (navigationFallbackRef.current !== null) {
+      window.clearTimeout(navigationFallbackRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -147,10 +159,24 @@ export function Flipbook() {
       const controller = flipbookRef.current?.pageFlip();
       if (Math.abs(nextPage - page) > 1) {
         controller?.turnToPage(physicalIndexForSource(nextPage));
+        pageRef.current = nextPage;
         setPage(nextPage);
         return;
       }
-      controller?.flip(physicalIndexForSource(nextPage), "top");
+      const physicalIndex = physicalIndexForSource(nextPage);
+      controller?.flip(physicalIndex, "top");
+      if (navigationFallbackRef.current !== null) {
+        window.clearTimeout(navigationFallbackRef.current);
+      }
+      navigationFallbackRef.current = window.setTimeout(() => {
+        if (pageRef.current !== nextPage) {
+          flipbookRef.current?.pageFlip()?.turnToPage(physicalIndex);
+          pageRef.current = nextPage;
+          setPage(nextPage);
+          setIsFlipping(false);
+        }
+        navigationFallbackRef.current = null;
+      }, 1450);
     },
     [page],
   );
@@ -325,11 +351,16 @@ export function Flipbook() {
         </aside>
       )}
 
-      <section className="book-viewport">
-        <button className="page-turn-zone page-turn-left" onClick={previous} disabled={page === 1} aria-label="Previous page">
+      <nav className="reader-side-nav journal-side-nav" aria-label="Page navigation">
+        <button type="button" className="reader-side-button is-previous" onClick={previous} disabled={page === 1} aria-label="Previous page">
           <ChevronLeft />
         </button>
+        <button type="button" className="reader-side-button is-next" onClick={next} disabled={page === PAGE_COUNT} aria-label="Next page">
+          <ChevronRight />
+        </button>
+      </nav>
 
+      <section className="book-viewport">
         <div
           ref={bookScrollRef}
           className={`book-scroll ${zoom > 100 ? "is-pannable" : ""} ${isPanning ? "is-panning" : ""}`}
@@ -360,14 +391,6 @@ export function Flipbook() {
               setIsPanning(true);
               event.currentTarget.setPointerCapture(event.pointerId);
               event.stopPropagation();
-            } else {
-              const book = event.currentTarget.querySelector(".flipbook-zoom");
-              const rect = book?.getBoundingClientRect();
-              if (rect) {
-                setFlipTarget(event.clientX < rect.left + rect.width / 2
-                  ? Math.max(1, page - 1)
-                  : Math.min(PAGE_COUNT, page + 1));
-              }
             }
           }}
           onPointerMove={(event) => {
@@ -431,7 +454,11 @@ export function Flipbook() {
                 });
                 event.object.turnToPage(physicalIndexForSource(page));
               }}
-              onFlip={(event: { data: number }) => setPage(sourceForPhysicalIndex(event.data))}
+              onFlip={(event: { data: number }) => {
+                const sourcePage = sourceForPhysicalIndex(event.data);
+                pageRef.current = sourcePage;
+                setPage(sourcePage);
+              }}
               onChangeState={(event: { data: string }) => {
                 const flipping = event.data === "flipping";
                 if (event.data === "flipping" && !soundPlayedRef.current) {
@@ -469,9 +496,6 @@ export function Flipbook() {
           </div>
         </div>
 
-        <button className="page-turn-zone page-turn-right" onClick={next} disabled={page === PAGE_COUNT} aria-label="Next page">
-          <ChevronRight />
-        </button>
       </section>
 
       <footer className="reader-footer">
