@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Hotspot, PAGE_COUNT, pageImage } from "@/lib/flipbook-types";
+import { playPageTurnSound } from "@/lib/page-turn-sound";
 
 type PanState = {
   x: number;
@@ -112,6 +113,7 @@ export function Flipbook() {
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const flipbookRef = useRef<FlipbookRef | null>(null);
   const soundPlayedRef = useRef(false);
+  const soundVariantRef = useRef(0);
   const zoomRef = useRef(100);
   const zoomAnchorRef = useRef<{
     ratioX: number;
@@ -205,29 +207,9 @@ export function Flipbook() {
   };
 
   const playTurnSound = useCallback(() => {
-    if (!turnSound || typeof AudioContext === "undefined") return;
-    const context = new AudioContext();
-    const duration = 0.48;
-    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-    const channel = buffer.getChannelData(0);
-    for (let index = 0; index < channel.length; index += 1) {
-      const progress = index / channel.length;
-      channel[index] = (Math.random() * 2 - 1) * Math.sin(Math.PI * progress) * (1 - progress * 0.45) * 0.34;
-    }
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    filter.type = "bandpass";
-    filter.frequency.setValueAtTime(1150, context.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(420, context.currentTime + duration);
-    filter.Q.value = 0.72;
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.035);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
-    source.buffer = buffer;
-    source.connect(filter).connect(gain).connect(context.destination);
-    source.start();
-    source.addEventListener("ended", () => void context.close(), { once: true });
+    if (!turnSound) return;
+    playPageTurnSound(soundVariantRef.current);
+    soundVariantRef.current = (soundVariantRef.current + 1) % 3;
   }, [turnSound]);
 
   const toggleFullscreen = () => {
@@ -468,7 +450,7 @@ export function Flipbook() {
               }}
               onFlip={(event: { data: number }) => setPage(sourceForPhysicalIndex(event.data))}
               onChangeState={(event: { data: string }) => {
-                const flipping = event.data === "flipping" || event.data === "user_fold";
+                const flipping = event.data === "flipping";
                 if (event.data === "flipping" && !soundPlayedRef.current) {
                   soundPlayedRef.current = true;
                   playTurnSound();
