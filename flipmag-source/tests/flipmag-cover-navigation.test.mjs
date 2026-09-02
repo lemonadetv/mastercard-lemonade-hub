@@ -7,10 +7,12 @@ const exporter = await readFile(new URL("../lib/export-flip-project.ts", import.
 const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("navigates every adjacent page through its physical spread index", () => {
-  assert.match(reader, /controller\?\.flip\(indexForSource\(next\), "top"\)/);
+  assert.match(reader, /const physicalIndex = indexForSource\(next\)/);
+  assert.match(reader, /controller\?\.flip\(physicalIndex, "top"\)/);
   assert.doesNotMatch(reader, /sourcePage === first && next === second/);
   assert.doesNotMatch(reader, /sourcePage === second && next === first/);
-  assert.match(exporter, /flip\.flip\(physicalIndex\(next\.pageNumber\),'top'\)/);
+  assert.match(exporter, /const target=physicalIndex\(next\.pageNumber\)/);
+  assert.match(exporter, /flip\.flip\(target,'top'\)/);
 });
 
 test("centers front and back covers during both transition directions", () => {
