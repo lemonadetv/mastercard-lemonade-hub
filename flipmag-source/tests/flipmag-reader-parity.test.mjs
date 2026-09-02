@@ -14,6 +14,8 @@ test("keeps online controls clickable at wide viewport sizes", () => {
   assert.match(css, /\.dynamic-scroll,\.dynamic-zoom\{position:relative;z-index:1;min-width:0\}/);
   assert.match(css, /\.page-turn-zone\{z-index:30;pointer-events:auto\}/);
   assert.match(css, /\.reader-actions\{position:relative;z-index:50\}/);
+  assert.doesNotMatch(reader, /flipping" \|\| event\.data === "user_fold/);
+  assert.doesNotMatch(journal, /flipping" \|\| event\.data === "user_fold/);
 });
 
 test("shows magazine name and active title beside Mastercard", () => {
@@ -39,6 +41,9 @@ test("page-turn sound is available and can be disabled online and in exports", (
   assert.match(reader, /Turn page sound off/);
   assert.match(exporter, /function playTurnSound\(\)/);
   assert.match(exporter, /turnSound=!turnSound/);
+  assert.match(exporter, /profiles=\[\{d:\.42/);
+  assert.match(exporter, /soundVariant=\(soundVariant\+1\)%3/);
   assert.match(journal, /const \[turnSound, setTurnSound\] = useState\(true\)/);
   assert.match(journal, /soundPlayedRef\.current = true/);
+  assert.match(journal, /soundVariantRef\.current = \(soundVariantRef\.current \+ 1\) % 3/);
 });
