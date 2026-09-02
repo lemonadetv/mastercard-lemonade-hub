@@ -6,8 +6,8 @@ const dashboard = await readFile(new URL("../app/flipmag/flipmag-dashboard.tsx",
 const pagesRoute = await readFile(new URL("../app/api/flipmag/projects/[id]/pages/route.ts", import.meta.url), "utf8");
 
 test("saves imported PDF pages in D1-safe batches", () => {
-  assert.match(pagesRoute, /offset \+= 4/);
-  assert.match(pagesRoute, /values\.slice\(offset, offset \+ 4\)/);
+  assert.match(pagesRoute, /await db\.batch\(\[/);
+  assert.match(pagesRoute, /values\.map\(\(value\) => db\.insert\(flipPages\)\.values\(value\)\)/);
   assert.doesNotMatch(pagesRoute, /insert\(flipPages\)\.values\(body\.pages\.map/);
 });
 
