@@ -16,6 +16,11 @@ test("keeps online controls clickable at wide viewport sizes", () => {
   assert.match(css, /\.reader-actions\{position:relative;z-index:50\}/);
   assert.doesNotMatch(reader, /flipping" \|\| event\.data === "user_fold/);
   assert.doesNotMatch(journal, /flipping" \|\| event\.data === "user_fold/);
+  assert.match(reader, /showPageCorners=\{false\}/);
+  assert.match(journal, /showPageCorners=\{false\}/);
+  assert.match(exporter, /showPageCorners:false/);
+  assert.doesNotMatch(reader, /disabled=\{activePage === lastPage \|\| isFlipping\}/);
+  assert.doesNotMatch(journal, /disabled=\{page === PAGE_COUNT \|\| isFlipping\}/);
 });
 
 test("shows magazine name and active title beside Mastercard", () => {
