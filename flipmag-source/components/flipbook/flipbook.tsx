@@ -46,6 +46,8 @@ type FlipController = {
   flipNext: (corner?: "top" | "bottom") => void;
   flipPrev: (corner?: "top" | "bottom") => void;
   turnToPage: (page: number) => void;
+  getState: () => string;
+  getSettings: () => { disableFlipByClick: boolean };
   getPage: (index: number) => {
     setDensity: (density: "soft" | "hard") => void;
     setDrawingDensity: (density: "soft" | "hard") => void;
@@ -100,6 +102,7 @@ export function Flipbook() {
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const [isFlipping, setIsFlipping] = useState(false);
+  const [isFlipReady, setIsFlipReady] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
@@ -111,7 +114,7 @@ export function Flipbook() {
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const flipbookRef = useRef<FlipbookRef | null>(null);
   const pageRef = useRef(1);
-  const navigationFallbackRef = useRef<number | null>(null);
+  const navigationLockedRef = useRef(false);
   const soundPlayedRef = useRef(false);
   const soundVariantRef = useRef(0);
   const zoomRef = useRef(100);
@@ -130,12 +133,6 @@ export function Flipbook() {
     pageRef.current = page;
   }, [page]);
 
-  useEffect(() => () => {
-    if (navigationFallbackRef.current !== null) {
-      window.clearTimeout(navigationFallbackRef.current);
-    }
-  }, []);
-
   useEffect(() => {
     let live = true;
     Promise.all([
@@ -153,30 +150,40 @@ export function Flipbook() {
 
   const turnTo = useCallback(
     (nextPage: number) => {
-      if (nextPage < 1 || nextPage > PAGE_COUNT || nextPage === page) return;
+      if (
+        nextPage < 1 ||
+        nextPage > PAGE_COUNT ||
+        nextPage === page ||
+        navigationLockedRef.current
+      ) return;
       setActiveAudio(null);
       setAudioPlaying(false);
       const controller = flipbookRef.current?.pageFlip();
+      if (!controller) return;
       if (Math.abs(nextPage - page) > 1) {
-        controller?.turnToPage(physicalIndexForSource(nextPage));
+        controller.turnToPage(physicalIndexForSource(nextPage));
         pageRef.current = nextPage;
         setPage(nextPage);
         return;
       }
-      const physicalIndex = physicalIndexForSource(nextPage);
-      controller?.flip(physicalIndex, "top");
-      if (navigationFallbackRef.current !== null) {
-        window.clearTimeout(navigationFallbackRef.current);
+      navigationLockedRef.current = true;
+      setIsFlipping(true);
+      const settings = controller.getSettings();
+      const clickWasDisabled = settings.disableFlipByClick;
+      settings.disableFlipByClick = false;
+      try {
+        if (nextPage > page) controller.flipNext("top");
+        else controller.flipPrev("top");
+      } finally {
+        settings.disableFlipByClick = clickWasDisabled;
       }
-      navigationFallbackRef.current = window.setTimeout(() => {
-        if (pageRef.current !== nextPage) {
-          flipbookRef.current?.pageFlip()?.turnToPage(physicalIndex);
-          pageRef.current = nextPage;
-          setPage(nextPage);
+      window.setTimeout(() => {
+        const activeController = flipbookRef.current?.pageFlip();
+        if (activeController?.getState() === "read" && pageRef.current === page) {
+          navigationLockedRef.current = false;
           setIsFlipping(false);
         }
-        navigationFallbackRef.current = null;
-      }, 1450);
+      }, 120);
     },
     [page],
   );
@@ -352,10 +359,10 @@ export function Flipbook() {
       )}
 
       <nav className="reader-side-nav journal-side-nav" aria-label="Page navigation">
-        <button type="button" className="reader-side-button is-previous" onClick={previous} disabled={page === 1} aria-label="Previous page">
+        <button type="button" className="reader-side-button is-previous" onClick={previous} disabled={!isFlipReady || page === 1 || isFlipping} aria-label="Previous page">
           <ChevronLeft />
         </button>
-        <button type="button" className="reader-side-button is-next" onClick={next} disabled={page === PAGE_COUNT} aria-label="Next page">
+        <button type="button" className="reader-side-button is-next" onClick={next} disabled={!isFlipReady || page === PAGE_COUNT || isFlipping} aria-label="Next page">
           <ChevronRight />
         </button>
       </nav>
@@ -453,6 +460,7 @@ export function Flipbook() {
                   cover.setDrawingDensity("soft");
                 });
                 event.object.turnToPage(physicalIndexForSource(page));
+                setIsFlipReady(true);
               }}
               onFlip={(event: { data: number }) => {
                 const sourcePage = sourceForPhysicalIndex(event.data);
@@ -460,7 +468,8 @@ export function Flipbook() {
                 setPage(sourcePage);
               }}
               onChangeState={(event: { data: string }) => {
-                const flipping = event.data === "flipping";
+                const flipping = event.data === "flipping" || event.data === "user_fold";
+                navigationLockedRef.current = flipping;
                 if (event.data === "flipping" && !soundPlayedRef.current) {
                   soundPlayedRef.current = true;
                   playTurnSound();
@@ -506,8 +515,8 @@ export function Flipbook() {
           <span>{zoom}%</span>
         </div>
         <div className="footer-nav">
-          <Button variant="outline" size="icon" onClick={previous} disabled={page === 1} aria-label="Previous page"><ChevronLeft /></Button>
-          <Button variant="outline" size="icon" onClick={next} disabled={page === PAGE_COUNT} aria-label="Next page"><ChevronRight /></Button>
+          <Button variant="outline" size="icon" onClick={previous} disabled={!isFlipReady || page === 1 || isFlipping} aria-label="Previous page"><ChevronLeft /></Button>
+          <Button variant="outline" size="icon" onClick={next} disabled={!isFlipReady || page === PAGE_COUNT || isFlipping} aria-label="Next page"><ChevronRight /></Button>
         </div>
       </footer>
 
