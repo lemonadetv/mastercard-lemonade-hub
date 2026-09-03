@@ -154,6 +154,12 @@
     text-transform: uppercase;
     color: var(--text-faint);
   }
+  .tools-label-wrap{ display: grid; gap: 7px; }
+  .tools-help{
+    color: var(--text-dim);
+    font-size: 12px;
+    line-height: 1.4;
+  }
   .add-tool-button{
     display: inline-flex;
     align-items: center;
@@ -221,13 +227,48 @@
     z-index: 3;
   }
   .sortable-card{ transition: border-color .18s ease, transform .18s ease, opacity .18s ease; }
-  .sortable-card.dragging{
-    border-color: var(--mc-orange);
-    opacity: .48;
-    transform: scale(.985);
+  .sortable-card.drag-source{
+    background: rgba(255,95,0,0.075);
+    border: 1px dashed rgba(255,138,61,0.92);
+    box-shadow: inset 0 0 0 1px rgba(255,95,0,0.08);
+    transform: none;
   }
+  .drag-source > *{ visibility: hidden; }
+  .drag-source::before{ opacity: .16; }
+  .drag-source::after{
+    align-items: center;
+    animation: dropPulse 1.05s ease-in-out infinite;
+    border-radius: 10px;
+    color: var(--mc-orange);
+    content: 'Drop here';
+    display: flex;
+    font-size: 13px;
+    font-weight: 600;
+    inset: 10px;
+    justify-content: center;
+    letter-spacing: .02em;
+    position: absolute;
+    visibility: visible;
+    z-index: 4;
+  }
+  .drag-ghost{
+    border-color: var(--mc-orange) !important;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 0 2px rgba(255,95,0,.18);
+    cursor: grabbing;
+    left: 0;
+    margin: 0 !important;
+    opacity: .96;
+    pointer-events: none;
+    position: fixed !important;
+    top: 0;
+    transform-origin: center;
+    will-change: transform;
+    z-index: 1000;
+  }
+  .drag-ghost .card-actions{ display: none; }
   body.is-sorting,
   body.is-sorting *{ user-select: none; }
+  body.is-sorting{ cursor: grabbing; }
   .custom-card:hover .card-actions,
   .custom-card:focus-within .card-actions{ opacity: 1; }
   .tool-action{
@@ -437,6 +478,34 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
+  .tool-status{
+    background: rgba(18,21,28,.96);
+    border: 1px solid rgba(255,95,0,.55);
+    border-radius: 10px;
+    bottom: 24px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.4);
+    color: var(--text);
+    font-size: 13px;
+    left: 50%;
+    max-width: min(440px, calc(100vw - 32px));
+    opacity: 0;
+    padding: 11px 15px;
+    pointer-events: none;
+    position: fixed;
+    text-align: center;
+    transform: translate(-50%, 12px);
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 1200;
+  }
+  .tool-status.is-visible{
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @keyframes dropPulse{
+    0%, 100%{ opacity: .62; transform: scale(.985); }
+    50%{ opacity: 1; transform: scale(1); }
+  }
 
   @media (max-width: 900px){
     .tool-grid{ grid-template-columns: 1fr; }
@@ -473,7 +542,10 @@
     <p class="hub-sub">Direct access to the tools our team uses to build, track, and measure Mastercard Business Intelligence communications.</p>
 
     <div class="tools-heading">
-      <div class="tools-label">Tools &amp; resources</div>
+      <div class="tools-label-wrap">
+        <div class="tools-label">Tools &amp; resources</div>
+        <div class="tools-help">Hold the six-dot handle and move the card. The highlighted space shows where it will be placed.</div>
+      </div>
       <button class="add-tool-button" id="open-add-tool" type="button">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         Add new link
@@ -645,7 +717,7 @@
     </form>
   </dialog>
 
-  <div class="visually-hidden" id="tool-status" aria-live="polite"></div>
+  <div class="tool-status" id="tool-status" role="status" aria-live="polite"></div>
 
   <script>
     (() => {
@@ -678,7 +750,15 @@
       let selectedIcon = 'link';
       let editingToolId = null;
       let editingToolType = null;
-      let draggedCard = null;
+      let dragState = null;
+      let statusTimer = null;
+
+      new MutationObserver(() => {
+        if (!status.textContent.trim()) return;
+        window.clearTimeout(statusTimer);
+        status.classList.add('is-visible');
+        statusTimer = window.setTimeout(() => status.classList.remove('is-visible'), 2200);
+      }).observe(status, { childList: true, characterData: true, subtree: true });
 
       const getTools = () => {
         try {
@@ -779,81 +859,149 @@
         if (deleteButton) deleteButton.setAttribute('aria-label', `Delete ${tool.name}`);
       };
 
+      const captureCardPositions = (movingCard) => new Map(
+        [...grid.children]
+          .filter((card) => card.dataset.toolKey && card !== movingCard)
+          .map((card) => [card, card.getBoundingClientRect()])
+      );
+
+      const animateCardReflow = (previousPositions) => {
+        previousPositions.forEach((previousRect, card) => {
+          const nextRect = card.getBoundingClientRect();
+          const deltaX = previousRect.left - nextRect.left;
+          const deltaY = previousRect.top - nextRect.top;
+          if ((!deltaX && !deltaY) || typeof card.animate !== 'function') return;
+          card.animate(
+            [
+              { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)` },
+              { transform: 'translate3d(0, 0, 0)' }
+            ],
+            { duration: 230, easing: 'cubic-bezier(.2,.8,.2,1)' }
+          );
+        });
+      };
+
       const moveCardNearPoint = (card, clientX, clientY) => {
         const element = document.elementFromPoint(clientX, clientY);
         const target = element && element.closest('.sortable-card');
-        if (!target || target === card || target.parentElement !== grid) return;
+        if (!target || target === card || target.parentElement !== grid) return false;
 
         const rect = target.getBoundingClientRect();
         const withinRow = clientY >= rect.top && clientY <= rect.bottom;
         const insertBefore = withinRow
           ? clientX < rect.left + rect.width / 2
           : clientY < rect.top + rect.height / 2;
+        const previousIndex = [...grid.children].indexOf(card);
+        const previousPositions = captureCardPositions(card);
         grid.insertBefore(card, insertBefore ? target : target.nextSibling);
+        const nextIndex = [...grid.children].indexOf(card);
+
+        if (previousIndex === nextIndex) return false;
+        animateCardReflow(previousPositions);
+        return true;
       };
+
+      const positionDragGhost = (state, clientX, clientY) => {
+        const left = clientX - state.offsetX;
+        const top = clientY - state.offsetY;
+        state.ghost.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(.7deg) scale(1.015)`;
+      };
+
+      const beginCardDrag = (state, clientX, clientY) => {
+        const rect = state.card.getBoundingClientRect();
+        const ghost = state.card.cloneNode(true);
+        ghost.classList.remove('drag-source');
+        ghost.classList.add('drag-ghost');
+        ghost.removeAttribute('data-tool-key');
+        ghost.style.width = `${rect.width}px`;
+        ghost.style.height = `${rect.height}px`;
+
+        state.active = true;
+        state.ghost = ghost;
+        state.offsetX = state.startX - rect.left;
+        state.offsetY = state.startY - rect.top;
+        state.card.classList.add('drag-source');
+        document.body.classList.add('is-sorting');
+        document.body.appendChild(ghost);
+        positionDragGhost(state, clientX, clientY);
+
+        const name = state.card.querySelector('.tool-name')?.textContent?.trim() || 'Card';
+        status.textContent = `${name} selected. Move it to the highlighted position and release.`;
+      };
+
+      const finishCardDrag = () => {
+        if (!dragState) return;
+        const state = dragState;
+        dragState = null;
+
+        if (state.active) {
+          const ghostRect = state.ghost.getBoundingClientRect();
+          const targetRect = state.card.getBoundingClientRect();
+          state.card.classList.remove('drag-source');
+          state.ghost.remove();
+          document.body.classList.remove('is-sorting');
+
+          if (typeof state.card.animate === 'function') {
+            state.card.animate(
+              [
+                {
+                  opacity: .72,
+                  transform: `translate3d(${ghostRect.left - targetRect.left}px, ${ghostRect.top - targetRect.top}px, 0) rotate(.7deg) scale(1.015)`
+                },
+                { opacity: 1, transform: 'translate3d(0, 0, 0) rotate(0) scale(1)' }
+              ],
+              { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' }
+            );
+          }
+
+          if (state.orderChanged) saveCurrentOrder();
+          status.textContent = state.orderChanged ? 'Card moved. New order saved.' : 'Card kept in the same position.';
+        }
+      };
+
+      const handleCardPointerMove = (event) => {
+        if (!dragState || event.pointerId !== dragState.pointerId) return;
+        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+        if (!dragState.active && distance < 5) return;
+        if (!dragState.active) beginCardDrag(dragState, event.clientX, event.clientY);
+
+        positionDragGhost(dragState, event.clientX, event.clientY);
+        if (moveCardNearPoint(dragState.card, event.clientX, event.clientY)) {
+          dragState.orderChanged = true;
+        }
+        event.preventDefault();
+      };
+
+      const handleCardPointerEnd = (event) => {
+        if (!dragState || event.pointerId !== dragState.pointerId) return;
+        finishCardDrag();
+      };
+
+      document.addEventListener('pointermove', handleCardPointerMove, { passive: false });
+      document.addEventListener('pointerup', handleCardPointerEnd);
+      document.addEventListener('pointercancel', handleCardPointerEnd);
+      window.addEventListener('blur', finishCardDrag);
 
       const makeSortable = (card, handle) => {
         card.classList.add('sortable-card');
         card.draggable = false;
 
-        let pointerSorting = false;
-        let orderChanged = false;
-        let startX = 0;
-        let startY = 0;
-
         handle.addEventListener('pointerdown', (event) => {
           if (event.pointerType === 'mouse' && event.button !== 0) return;
-          pointerSorting = true;
-          orderChanged = false;
-          startX = event.clientX;
-          startY = event.clientY;
-          draggedCard = card;
+          if (dragState) finishCardDrag();
+          dragState = {
+            active: false,
+            card,
+            ghost: null,
+            offsetX: 0,
+            offsetY: 0,
+            orderChanged: false,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY
+          };
           handle.focus();
-          handle.setPointerCapture(event.pointerId);
-          document.body.classList.add('is-sorting');
           event.preventDefault();
-        });
-
-        handle.addEventListener('pointermove', (event) => {
-          if (!pointerSorting) return;
-          const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
-          if (!orderChanged && distance < 5) return;
-          orderChanged = true;
-          card.classList.add('dragging');
-          moveCardNearPoint(card, event.clientX, event.clientY);
-          event.preventDefault();
-        });
-
-        const finishPointerSort = (event) => {
-          if (pointerSorting) {
-            pointerSorting = false;
-            if (handle.hasPointerCapture?.(event.pointerId)) {
-              handle.releasePointerCapture(event.pointerId);
-            }
-            document.body.classList.remove('is-sorting');
-            card.classList.remove('dragging');
-            if (orderChanged) {
-              saveCurrentOrder();
-              status.textContent = 'Card order updated.';
-            }
-          }
-          draggedCard = null;
-        };
-
-        handle.addEventListener('pointerup', finishPointerSort);
-        handle.addEventListener('pointercancel', finishPointerSort);
-
-        handle.addEventListener('lostpointercapture', () => {
-          if (pointerSorting) {
-            pointerSorting = false;
-            document.body.classList.remove('is-sorting');
-            card.classList.remove('dragging');
-            if (orderChanged) {
-              saveCurrentOrder();
-              status.textContent = 'Card order updated.';
-            }
-            draggedCard = null;
-          }
         });
 
         handle.addEventListener('keydown', (event) => {
