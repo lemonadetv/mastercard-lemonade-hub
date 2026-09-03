@@ -176,7 +176,7 @@
   .dialog-close:focus-visible,
   .icon-option:focus-visible,
   .form-action:focus-visible,
-  .remove-tool:focus-visible{
+  .tool-action:focus-visible{
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
@@ -210,7 +210,19 @@
     padding: 28px 26px 26px;
     text-decoration: none;
   }
-  .remove-tool{
+  .card-actions{
+    display: flex;
+    gap: 7px;
+    opacity: .82;
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    transition: opacity .18s ease;
+    z-index: 3;
+  }
+  .custom-card:hover .card-actions,
+  .custom-card:focus-within .card-actions{ opacity: 1; }
+  .tool-action{
     align-items: center;
     background: rgba(11,13,18,0.72);
     border: 1px solid var(--border);
@@ -220,16 +232,14 @@
     display: flex;
     height: 30px;
     justify-content: center;
-    opacity: 0;
-    position: absolute;
-    right: 14px;
-    top: 14px;
-    transition: color .18s ease, border-color .18s ease, opacity .18s ease;
+    transition: color .18s ease, border-color .18s ease, background .18s ease;
     width: 30px;
-    z-index: 3;
   }
-  .custom-card:hover .remove-tool,
-  .remove-tool:focus-visible{ opacity: 1; }
+  .edit-tool:hover{
+    background: rgba(255,95,0,0.12);
+    border-color: var(--mc-orange);
+    color: var(--mc-orange);
+  }
   .remove-tool:hover{ border-color: var(--mc-red); color: var(--mc-red); }
   .tool-card:hover{
     border-color: var(--card-accent, var(--mc-orange));
@@ -416,7 +426,7 @@
     .topbar{ padding: 20px 22px; }
     .tools-heading{ align-items: stretch; flex-direction: column; }
     .add-tool-button{ justify-content: center; }
-    .remove-tool{ opacity: 1; }
+    .card-actions{ opacity: 1; }
     .dialog-shell{ padding: 22px; }
     .icon-grid{ grid-template-columns: repeat(3, 1fr); }
   }
@@ -584,7 +594,7 @@
       <div class="dialog-header">
         <div>
           <h2 class="dialog-title" id="dialog-title">Add a new link</h2>
-          <p class="dialog-subtitle">Create a shortcut using the same style as the other tools.</p>
+          <p class="dialog-subtitle" id="dialog-subtitle">Create a shortcut using the same style as the other tools.</p>
         </div>
         <button class="dialog-close" id="close-add-tool" type="button" aria-label="Close dialog">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -612,7 +622,7 @@
       <p class="form-error" id="form-error" role="alert"></p>
       <div class="dialog-actions">
         <button class="form-action secondary" id="cancel-add-tool" type="button">Cancel</button>
-        <button class="form-action primary" type="submit">Add link</button>
+        <button class="form-action primary" id="save-tool" type="submit">Add link</button>
       </div>
     </form>
   </dialog>
@@ -638,7 +648,14 @@
       const iconGrid = document.getElementById('icon-grid');
       const errorMessage = document.getElementById('form-error');
       const status = document.getElementById('tool-status');
+      const dialogTitle = document.getElementById('dialog-title');
+      const dialogSubtitle = document.getElementById('dialog-subtitle');
+      const saveButton = document.getElementById('save-tool');
+      const nameInput = document.getElementById('tool-name-input');
+      const descriptionInput = document.getElementById('tool-description-input');
+      const urlInput = document.getElementById('tool-url-input');
       let selectedIcon = 'link';
+      let editingToolId = null;
 
       const getTools = () => {
         try {
@@ -717,40 +734,57 @@
 
         cardLink.append(icon, name, description, open, url);
 
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const edit = document.createElement('button');
+        edit.className = 'tool-action edit-tool';
+        edit.type = 'button';
+        edit.setAttribute('aria-label', `Edit ${tool.name}`);
+        edit.title = 'Edit card';
+        edit.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.8 2.2l3 3-6.9 6.9-3.5.5.5-3.5 6.9-6.9zM7.7 3.3l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        edit.addEventListener('click', () => openEditDialog(tool));
+
         const remove = document.createElement('button');
-        remove.className = 'remove-tool';
+        remove.className = 'tool-action remove-tool';
         remove.type = 'button';
-        remove.setAttribute('aria-label', `Remove ${tool.name}`);
-        remove.title = 'Remove link';
+        remove.setAttribute('aria-label', `Delete ${tool.name}`);
+        remove.title = 'Delete card';
         remove.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 4h8M5 4V2.5h4V4m-5.5 0l.6 7h5.8l.6-7M6 6v3.5M8 6v3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         remove.addEventListener('click', () => {
+          if (!window.confirm(`Delete “${tool.name}”? This card will be removed from your portal.`)) return;
           const tools = getTools().filter((item) => item.id !== tool.id);
           saveTools(tools);
           card.remove();
-          status.textContent = `${tool.name} removed.`;
+          status.textContent = `${tool.name} deleted.`;
         });
 
-        card.append(cardLink, remove);
+        actions.append(edit, remove);
+        card.append(cardLink, actions);
         return card;
       };
 
       const renderSavedTools = () => {
+        grid.querySelectorAll('.custom-card').forEach((card) => card.remove());
         getTools().forEach((tool) => grid.appendChild(createToolCard(tool)));
+      };
+
+      const setSelectedIcon = (iconName) => {
+        selectedIcon = iconPaths[iconName] ? iconName : 'link';
+        iconGrid.querySelectorAll('.icon-option').forEach((option) => {
+          option.setAttribute('aria-pressed', option.dataset.icon === selectedIcon ? 'true' : 'false');
+        });
       };
 
       Object.keys(iconPaths).forEach((iconName) => {
         const button = document.createElement('button');
         button.className = 'icon-option';
         button.type = 'button';
+        button.dataset.icon = iconName;
         button.setAttribute('aria-label', `Use ${iconName} icon`);
         button.setAttribute('aria-pressed', iconName === selectedIcon ? 'true' : 'false');
         button.appendChild(createIcon(iconName));
-        button.addEventListener('click', () => {
-          selectedIcon = iconName;
-          iconGrid.querySelectorAll('.icon-option').forEach((option) => {
-            option.setAttribute('aria-pressed', option === button ? 'true' : 'false');
-          });
-        });
+        button.addEventListener('click', () => setSelectedIcon(iconName));
         iconGrid.appendChild(button);
       });
 
@@ -758,12 +792,37 @@
         dialog.close();
         form.reset();
         errorMessage.textContent = '';
+        editingToolId = null;
       };
 
-      document.getElementById('open-add-tool').addEventListener('click', () => {
+      const openAddDialog = () => {
+        editingToolId = null;
+        form.reset();
+        setSelectedIcon('link');
+        dialogTitle.textContent = 'Add a new link';
+        dialogSubtitle.textContent = 'Create a shortcut using the same style as the other tools.';
+        saveButton.textContent = 'Add link';
+        errorMessage.textContent = '';
         dialog.showModal();
-        document.getElementById('tool-name-input').focus();
-      });
+        nameInput.focus();
+      };
+
+      const openEditDialog = (tool) => {
+        editingToolId = tool.id;
+        nameInput.value = tool.name;
+        descriptionInput.value = tool.description;
+        urlInput.value = tool.url;
+        setSelectedIcon(tool.icon);
+        dialogTitle.textContent = 'Edit link';
+        dialogSubtitle.textContent = 'Update the card details, destination, or icon.';
+        saveButton.textContent = 'Save changes';
+        errorMessage.textContent = '';
+        dialog.showModal();
+        nameInput.focus();
+        nameInput.select();
+      };
+
+      document.getElementById('open-add-tool').addEventListener('click', openAddDialog);
       document.getElementById('close-add-tool').addEventListener('click', closeDialog);
       document.getElementById('cancel-add-tool').addEventListener('click', closeDialog);
       dialog.addEventListener('click', (event) => {
@@ -793,6 +852,29 @@
         }
 
         const tools = getTools();
+        if (editingToolId) {
+          const toolIndex = tools.findIndex((item) => item.id === editingToolId);
+          if (toolIndex === -1) {
+            errorMessage.textContent = 'This card could not be found. Please close the window and try again.';
+            return;
+          }
+
+          const updatedTool = {
+            ...tools[toolIndex],
+            name,
+            description,
+            url: parsedUrl.href,
+            icon: selectedIcon
+          };
+          tools[toolIndex] = updatedTool;
+          saveTools(tools);
+          renderSavedTools();
+          closeDialog();
+          status.textContent = `${updatedTool.name} updated.`;
+          document.querySelector(`[data-custom-tool-id="${updatedTool.id}"] .edit-tool`).focus();
+          return;
+        }
+
         const tool = {
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           name,
@@ -804,7 +886,7 @@
 
         tools.push(tool);
         saveTools(tools);
-        grid.appendChild(createToolCard(tool));
+        renderSavedTools();
         closeDialog();
         status.textContent = `${tool.name} added.`;
         document.querySelector(`[data-custom-tool-id="${tool.id}"] .custom-card-link`).focus();
