@@ -220,6 +220,12 @@
     transition: opacity .18s ease;
     z-index: 3;
   }
+  .sortable-card{ transition: border-color .18s ease, transform .18s ease, opacity .18s ease; }
+  .sortable-card.dragging{
+    border-color: var(--mc-orange);
+    opacity: .48;
+    transform: scale(.985);
+  }
   .custom-card:hover .card-actions,
   .custom-card:focus-within .card-actions{ opacity: 1; }
   .tool-action{
@@ -234,6 +240,16 @@
     justify-content: center;
     transition: color .18s ease, border-color .18s ease, background .18s ease;
     width: 30px;
+  }
+  .drag-handle{
+    cursor: grab;
+    touch-action: none;
+  }
+  .drag-handle:active{ cursor: grabbing; }
+  .drag-handle:hover{
+    background: rgba(237,239,244,0.08);
+    border-color: var(--text-dim);
+    color: var(--text);
   }
   .edit-tool:hover{
     background: rgba(255,95,0,0.12);
@@ -464,7 +480,7 @@
 
     <div class="tool-grid" id="tool-grid">
 
-      <a class="tool-card" style="--card-accent:#ff5f00" href="/flipmag/admin">
+      <a class="tool-card" data-tool-id="page-flip-builder" data-icon="layers" style="--card-accent:#ff5f00" href="/flipmag/admin">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M4 3h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#ff5f00" stroke-width="1.6"/><path d="M6 7h8M6 10h8M6 13h5" stroke="#ff5f00" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
@@ -476,7 +492,7 @@
         <div class="tool-url">mastercard.lemonade-hq.com/flipmag/admin</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#ff5f00" href="https://mastercard.lemonade-us.com/" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="lemonade-builder" data-icon="browser" style="--card-accent:#ff5f00" href="https://mastercard.lemonade-us.com/" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="12" rx="2" stroke="#ff5f00" stroke-width="1.6"/><path d="M2 7h16" stroke="#ff5f00" stroke-width="1.6"/><circle cx="5" cy="5" r="0.6" fill="#ff5f00"/></svg>
         </div>
@@ -488,7 +504,7 @@
         <div class="tool-url">mastercard.lemonade-us.com</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#eb001b" href="https://www.lemonade-hq.com/mastercard/mbi-budget-tracker" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mbi-budget-tracker" data-icon="chart" style="--card-accent:#eb001b" href="https://www.lemonade-hq.com/mastercard/mbi-budget-tracker" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M3 15V9M8 15V5M13 15V11M18 15V3" stroke="#eb001b" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
@@ -500,7 +516,7 @@
         <div class="tool-url">lemonade-hq.com/mastercard/mbi-budget-tracker</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#f79e1b" href="https://www.lemonade-hq.com/mastercard/mbi-nl-and-job-tracker" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mbi-newsletters-tracker" data-icon="chart" style="--card-accent:#f79e1b" href="https://www.lemonade-hq.com/mastercard/mbi-nl-and-job-tracker" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M3 3v14h14" stroke="#f79e1b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 13l3.5-4 3 3L17 6" stroke="#f79e1b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
@@ -512,7 +528,7 @@
         <div class="tool-url">lemonade-hq.com/mastercard/mbi-nl-and-job-tracker</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#ff5f00" href="https://mbi.mastercardservices.com/" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mbi-portal" data-icon="layers" style="--card-accent:#ff5f00" href="https://mbi.mastercardservices.com/" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M10 3L17 7L10 11L3 7L10 3Z" stroke="#ff5f00" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 11L10 15L17 11" stroke="#ff5f00" stroke-width="1.6" stroke-linejoin="round"/></svg>
         </div>
@@ -524,7 +540,7 @@
         <div class="tool-url">mbi.mastercardservices.com</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#eb001b" href="https://www.mastercardconnect.com/-/sign-in?referral_path=%2F" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mastercard-connect" data-icon="link" style="--card-accent:#eb001b" href="https://www.mastercardconnect.com/-/sign-in?referral_path=%2F" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><circle cx="7.5" cy="10" r="5.5" stroke="#eb001b" stroke-width="1.6"/><circle cx="12.5" cy="10" r="5.5" stroke="#eb001b" stroke-width="1.6"/></svg>
         </div>
@@ -536,7 +552,7 @@
         <div class="tool-url">mastercardconnect.com</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#f79e1b" href="https://login.microsoftonline.com/f06fa858-824b-4a85-aacb-f372cfdc282e/oauth2/v2.0/authorize?client_id=2793995e-0a7d-40d7-bd35-6968ba142197&scope=openid%20profile%20offline_access%20email&redirect_uri=https%3A%2F%2Fmyapplications.microsoft.com%2F&client-request-id=d51de825-6592-4886-800d-c776c62ab028&response_mode=fragment&response_type=code&x-client-SKU=msal.js.browser&x-client-VER=2.37.1&client_info=1&code_challenge=eKsMqbVfzQHMFE5O1l9hWKqFXCVcTWxFJQvrUy6dDpU&code_challenge_method=S256&nonce=49bce707-2ea3-4244-95d0-29ec3aeed248&state=eyJpZCI6IjZmMDMwMjAzLTEwMzItNGQyZi04OGU5LTBlZDA4YmYzNDdjYyIsIm1ldGEiOnsiaW50ZXJhY3Rpb25UeXBlIjoicmVkaXJlY3QifX0%3D&sso_reload=true" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="microsoft-teams" data-icon="chat" style="--card-accent:#f79e1b" href="https://login.microsoftonline.com/f06fa858-824b-4a85-aacb-f372cfdc282e/oauth2/v2.0/authorize?client_id=2793995e-0a7d-40d7-bd35-6968ba142197&scope=openid%20profile%20offline_access%20email&redirect_uri=https%3A%2F%2Fmyapplications.microsoft.com%2F&client-request-id=d51de825-6592-4886-800d-c776c62ab028&response_mode=fragment&response_type=code&x-client-SKU=msal.js.browser&x-client-VER=2.37.1&client_info=1&code_challenge=eKsMqbVfzQHMFE5O1l9hWKqFXCVcTWxFJQvrUy6dDpU&code_challenge_method=S256&nonce=49bce707-2ea3-4244-95d0-29ec3aeed248&state=eyJpZCI6IjZmMDMwMjAzLTEwMzItNGQyZi04OGU5LTBlZDA4YmYzNDdjYyIsIm1ldGEiOnsiaW50ZXJhY3Rpb25UeXBlIjoicmVkaXJlY3QifX0%3D&sso_reload=true" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M3 5a2 2 0 012-2h10a2 2 0 012 2v6a2 2 0 01-2 2H8l-4 3v-3H5a2 2 0 01-2-2V5z" stroke="#f79e1b" stroke-width="1.6" stroke-linejoin="round"/></svg>
         </div>
@@ -548,7 +564,7 @@
         <div class="tool-url">teams.microsoft.com</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#ff5f00" href="https://www.mastercard.com/brandcenter/us/en/home.html" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mastercard-design-center" data-icon="browser" style="--card-accent:#ff5f00" href="https://www.mastercard.com/brandcenter/us/en/home.html" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M17 3L3 17M13 3l4 4M3 13l4 4" stroke="#ff5f00" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
@@ -560,7 +576,7 @@
         <div class="tool-url">mastercard.com/brandcenter</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#eb001b" href="https://drive.google.com/drive/folders/1ey4OnNy-FYJ0M_O5rePPGgFP8D2XB017?usp=sharing" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="lemonade-google-drive-assets" data-icon="folder" style="--card-accent:#eb001b" href="https://drive.google.com/drive/folders/1ey4OnNy-FYJ0M_O5rePPGgFP8D2XB017?usp=sharing" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M2 5a1 1 0 011-1h4l2 2h8a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="#eb001b" stroke-width="1.6" stroke-linejoin="round"/></svg>
         </div>
@@ -572,7 +588,7 @@
         <div class="tool-url">drive.google.com</div>
       </a>
 
-      <a class="tool-card" style="--card-accent:#f79e1b" href="https://mastercard.sonicspace.sonic-hub.com/#/login" target="_blank" rel="noopener noreferrer">
+      <a class="tool-card" data-tool-id="mastercard-sonic-hub" data-icon="link" style="--card-accent:#f79e1b" href="https://mastercard.sonicspace.sonic-hub.com/#/login" target="_blank" rel="noopener noreferrer">
         <div class="tool-icon">
           <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M3 10v0M6 7v6M9 4v12M12 7v6M15 10v0" stroke="#f79e1b" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
@@ -632,6 +648,8 @@
   <script>
     (() => {
       const storageKey = 'lemonade-mastercard-custom-tools-v1';
+      const baseStorageKey = 'lemonade-mastercard-base-tool-overrides-v1';
+      const orderStorageKey = 'lemonade-mastercard-tool-order-v1';
       const accentColors = ['#ff5f00', '#eb001b', '#f79e1b'];
       const iconPaths = {
         link: '<path d="M7.5 12.5l-1 1a3 3 0 01-4.2-4.2l2.2-2.2a3 3 0 014.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.5 7.5l1-1a3 3 0 00-4.2-4.2L7.1 4.5a3 3 0 000 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
@@ -654,8 +672,11 @@
       const nameInput = document.getElementById('tool-name-input');
       const descriptionInput = document.getElementById('tool-description-input');
       const urlInput = document.getElementById('tool-url-input');
+      const baseToolDefaults = new Map();
       let selectedIcon = 'link';
       let editingToolId = null;
+      let editingToolType = null;
+      let draggedCard = null;
 
       const getTools = () => {
         try {
@@ -668,7 +689,37 @@
 
       const saveTools = (tools) => localStorage.setItem(storageKey, JSON.stringify(tools));
 
+      const getBaseOverrides = () => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(baseStorageKey) || '{}');
+          return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+        } catch {
+          return {};
+        }
+      };
+
+      const saveBaseOverrides = (overrides) => {
+        localStorage.setItem(baseStorageKey, JSON.stringify(overrides));
+      };
+
+      const getSavedOrder = () => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(orderStorageKey) || '[]');
+          return Array.isArray(saved) ? saved : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const saveCurrentOrder = () => {
+        const order = [...grid.children]
+          .map((card) => card.dataset.toolKey)
+          .filter(Boolean);
+        localStorage.setItem(orderStorageKey, JSON.stringify(order));
+      };
+
       const normalizeUrl = (value) => {
+        if (value.startsWith('/')) return { href: value };
         const withProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(value) ? value : `https://${value}`;
         const parsed = new URL(withProtocol);
         if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Unsupported protocol');
@@ -686,11 +737,253 @@
         return svg;
       };
 
+      const formatToolUrl = (value) => {
+        try {
+          const parsed = new URL(value, window.location.origin);
+          return parsed.host + (parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, ''));
+        } catch {
+          return value;
+        }
+      };
+
+      const getCurrentTool = (type, id) => {
+        if (type === 'base') {
+          const original = baseToolDefaults.get(id);
+          if (!original) return null;
+          return { ...original, ...(getBaseOverrides()[id] || {}) };
+        }
+        return getTools().find((tool) => tool.id === id) || null;
+      };
+
+      const applyToolToCard = (card, tool, updateIcon = true) => {
+        const cardLink = card.querySelector('.custom-card-link');
+        cardLink.href = tool.url;
+        cardLink.setAttribute('aria-label', `${tool.name}: ${tool.description}`);
+        card.querySelector('.tool-name').textContent = tool.name;
+        card.querySelector('.tool-desc').textContent = tool.description;
+        card.querySelector('.tool-url').textContent = formatToolUrl(tool.url);
+
+        if (updateIcon) {
+          const icon = card.querySelector('.tool-icon');
+          icon.style.color = tool.accent;
+          icon.replaceChildren(createIcon(tool.icon));
+        }
+
+        const dragHandle = card.querySelector('.drag-handle');
+        const editButton = card.querySelector('.edit-tool');
+        const deleteButton = card.querySelector('.remove-tool');
+        if (dragHandle) dragHandle.setAttribute('aria-label', `Drag ${tool.name} to reorder`);
+        if (editButton) editButton.setAttribute('aria-label', `Edit ${tool.name}`);
+        if (deleteButton) deleteButton.setAttribute('aria-label', `Delete ${tool.name}`);
+      };
+
+      const moveCardNearPoint = (card, clientX, clientY) => {
+        const element = document.elementFromPoint(clientX, clientY);
+        const target = element && element.closest('.sortable-card');
+        if (!target || target === card || target.parentElement !== grid) return;
+
+        const rect = target.getBoundingClientRect();
+        const withinRow = clientY >= rect.top && clientY <= rect.bottom;
+        const insertBefore = withinRow
+          ? clientX < rect.left + rect.width / 2
+          : clientY < rect.top + rect.height / 2;
+        grid.insertBefore(card, insertBefore ? target : target.nextSibling);
+      };
+
+      const makeSortable = (card, handle) => {
+        card.classList.add('sortable-card');
+        card.draggable = true;
+
+        let touchSorting = false;
+
+        handle.addEventListener('pointerdown', (event) => {
+          card.dataset.dragReady = 'true';
+          if (event.pointerType !== 'mouse') {
+            touchSorting = true;
+            draggedCard = card;
+            card.classList.add('dragging');
+            handle.setPointerCapture(event.pointerId);
+            event.preventDefault();
+          }
+        });
+
+        handle.addEventListener('pointermove', (event) => {
+          if (!touchSorting) return;
+          moveCardNearPoint(card, event.clientX, event.clientY);
+          event.preventDefault();
+        });
+
+        const finishTouchSort = () => {
+          if (touchSorting) {
+            touchSorting = false;
+            card.classList.remove('dragging');
+            saveCurrentOrder();
+            status.textContent = 'Card order updated.';
+          }
+          card.dataset.dragReady = 'false';
+          draggedCard = null;
+        };
+
+        handle.addEventListener('pointerup', finishTouchSort);
+        handle.addEventListener('pointercancel', finishTouchSort);
+
+        handle.addEventListener('keydown', (event) => {
+          const moveBackward = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+          const moveForward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+          if (!moveBackward && !moveForward) return;
+
+          event.preventDefault();
+          if (moveBackward && card.previousElementSibling) {
+            grid.insertBefore(card, card.previousElementSibling);
+          } else if (moveForward && card.nextElementSibling) {
+            grid.insertBefore(card.nextElementSibling, card);
+          }
+          saveCurrentOrder();
+          status.textContent = 'Card order updated.';
+          handle.focus();
+        });
+
+        card.addEventListener('dragstart', (event) => {
+          if (card.dataset.dragReady !== 'true') {
+            event.preventDefault();
+            return;
+          }
+          draggedCard = card;
+          card.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', card.dataset.toolKey);
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          card.dataset.dragReady = 'false';
+          draggedCard = null;
+          saveCurrentOrder();
+          status.textContent = 'Card order updated.';
+        });
+      };
+
+      grid.addEventListener('dragover', (event) => {
+        if (!draggedCard) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        moveCardNearPoint(draggedCard, event.clientX, event.clientY);
+      });
+
+      grid.addEventListener('drop', (event) => {
+        if (!draggedCard) return;
+        event.preventDefault();
+        saveCurrentOrder();
+      });
+
+      const applySavedOrder = () => {
+        const cards = [...grid.children].filter((card) => card.dataset.toolKey);
+        const cardByKey = new Map(cards.map((card) => [card.dataset.toolKey, card]));
+        const fragment = document.createDocumentFragment();
+
+        getSavedOrder().forEach((key) => {
+          const card = cardByKey.get(key);
+          if (!card) return;
+          fragment.appendChild(card);
+          cardByKey.delete(key);
+        });
+        cards.forEach((card) => {
+          if (cardByKey.has(card.dataset.toolKey)) fragment.appendChild(card);
+        });
+        grid.appendChild(fragment);
+      };
+
+      const createCardActions = (type, id, card) => {
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const drag = document.createElement('button');
+        drag.className = 'tool-action drag-handle';
+        drag.type = 'button';
+        drag.title = 'Drag to reorder';
+        drag.setAttribute('aria-label', 'Drag card to reorder');
+        drag.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><circle cx="4" cy="3" r="1"/><circle cx="10" cy="3" r="1"/><circle cx="4" cy="7" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="4" cy="11" r="1"/><circle cx="10" cy="11" r="1"/></svg>';
+
+        const edit = document.createElement('button');
+        edit.className = 'tool-action edit-tool';
+        edit.type = 'button';
+        edit.title = 'Edit card';
+        edit.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.8 2.2l3 3-6.9 6.9-3.5.5.5-3.5 6.9-6.9zM7.7 3.3l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        edit.addEventListener('click', () => {
+          const tool = getCurrentTool(type, id);
+          if (tool) openEditDialog(tool, type);
+        });
+
+        const remove = document.createElement('button');
+        remove.className = 'tool-action remove-tool';
+        remove.type = 'button';
+        remove.title = 'Delete card';
+        remove.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 4h8M5 4V2.5h4V4m-5.5 0l.6 7h5.8l.6-7M6 6v3.5M8 6v3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        remove.addEventListener('click', () => {
+          const tool = getCurrentTool(type, id);
+          if (!tool || !window.confirm(`Delete “${tool.name}”? This card will be removed from your portal.`)) return;
+
+          if (type === 'base') {
+            const overrides = getBaseOverrides();
+            overrides[id] = { ...(overrides[id] || {}), deleted: true };
+            saveBaseOverrides(overrides);
+          } else {
+            saveTools(getTools().filter((item) => item.id !== id));
+          }
+          card.remove();
+          saveCurrentOrder();
+          status.textContent = `${tool.name} deleted.`;
+        });
+
+        actions.append(drag, edit, remove);
+        makeSortable(card, drag);
+        return actions;
+      };
+
+      const initializeBaseCards = () => {
+        const overrides = getBaseOverrides();
+        const baseLinks = [...grid.querySelectorAll(':scope > a.tool-card[data-tool-id]')];
+
+        baseLinks.forEach((cardLink) => {
+          const id = cardLink.dataset.toolId;
+          const original = {
+            id,
+            name: cardLink.querySelector('.tool-name').textContent.trim(),
+            description: cardLink.querySelector('.tool-desc').textContent.trim(),
+            url: cardLink.getAttribute('href'),
+            icon: cardLink.dataset.icon || 'link',
+            accent: cardLink.style.getPropertyValue('--card-accent') || '#ff5f00'
+          };
+          baseToolDefaults.set(id, original);
+
+          if (overrides[id]?.deleted) {
+            cardLink.remove();
+            return;
+          }
+
+          const card = document.createElement('article');
+          card.className = 'tool-card custom-card base-card';
+          card.style.setProperty('--card-accent', original.accent);
+          card.dataset.baseToolId = id;
+          card.dataset.toolKey = `base:${id}`;
+
+          grid.insertBefore(card, cardLink);
+          cardLink.className = 'custom-card-link';
+          cardLink.removeAttribute('style');
+          card.append(cardLink);
+          card.append(createCardActions('base', id, card));
+
+          const current = { ...original, ...(overrides[id] || {}) };
+          applyToolToCard(card, current, Boolean(overrides[id]?.icon));
+        });
+      };
+
       const createToolCard = (tool) => {
         const card = document.createElement('article');
         card.className = 'tool-card custom-card';
         card.style.setProperty('--card-accent', tool.accent);
         card.dataset.customToolId = tool.id;
+        card.dataset.toolKey = `custom:${tool.id}`;
 
         const cardLink = document.createElement('a');
         cardLink.className = 'custom-card-link';
@@ -725,48 +1018,18 @@
 
         const url = document.createElement('div');
         url.className = 'tool-url';
-        try {
-          const parsed = new URL(tool.url);
-          url.textContent = parsed.host + (parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, ''));
-        } catch {
-          url.textContent = tool.url;
-        }
+        url.textContent = formatToolUrl(tool.url);
 
         cardLink.append(icon, name, description, open, url);
-
-        const actions = document.createElement('div');
-        actions.className = 'card-actions';
-
-        const edit = document.createElement('button');
-        edit.className = 'tool-action edit-tool';
-        edit.type = 'button';
-        edit.setAttribute('aria-label', `Edit ${tool.name}`);
-        edit.title = 'Edit card';
-        edit.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.8 2.2l3 3-6.9 6.9-3.5.5.5-3.5 6.9-6.9zM7.7 3.3l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        edit.addEventListener('click', () => openEditDialog(tool));
-
-        const remove = document.createElement('button');
-        remove.className = 'tool-action remove-tool';
-        remove.type = 'button';
-        remove.setAttribute('aria-label', `Delete ${tool.name}`);
-        remove.title = 'Delete card';
-        remove.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 4h8M5 4V2.5h4V4m-5.5 0l.6 7h5.8l.6-7M6 6v3.5M8 6v3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        remove.addEventListener('click', () => {
-          if (!window.confirm(`Delete “${tool.name}”? This card will be removed from your portal.`)) return;
-          const tools = getTools().filter((item) => item.id !== tool.id);
-          saveTools(tools);
-          card.remove();
-          status.textContent = `${tool.name} deleted.`;
-        });
-
-        actions.append(edit, remove);
-        card.append(cardLink, actions);
+        card.append(cardLink, createCardActions('custom', tool.id, card));
+        applyToolToCard(card, tool);
         return card;
       };
 
       const renderSavedTools = () => {
-        grid.querySelectorAll('.custom-card').forEach((card) => card.remove());
+        grid.querySelectorAll('[data-custom-tool-id]').forEach((card) => card.remove());
         getTools().forEach((tool) => grid.appendChild(createToolCard(tool)));
+        applySavedOrder();
       };
 
       const setSelectedIcon = (iconName) => {
@@ -793,10 +1056,12 @@
         form.reset();
         errorMessage.textContent = '';
         editingToolId = null;
+        editingToolType = null;
       };
 
       const openAddDialog = () => {
         editingToolId = null;
+        editingToolType = null;
         form.reset();
         setSelectedIcon('link');
         dialogTitle.textContent = 'Add a new link';
@@ -807,8 +1072,9 @@
         nameInput.focus();
       };
 
-      const openEditDialog = (tool) => {
+      const openEditDialog = (tool, type) => {
         editingToolId = tool.id;
+        editingToolType = type;
         nameInput.value = tool.name;
         descriptionInput.value = tool.description;
         urlInput.value = tool.url;
@@ -851,8 +1117,32 @@
           return;
         }
 
+        if (editingToolId && editingToolType === 'base') {
+          const original = baseToolDefaults.get(editingToolId);
+          const card = document.querySelector(`[data-base-tool-id="${editingToolId}"]`);
+          if (!original || !card) {
+            errorMessage.textContent = 'This card could not be found. Please close the window and try again.';
+            return;
+          }
+
+          const overrides = getBaseOverrides();
+          overrides[editingToolId] = {
+            name,
+            description,
+            url: parsedUrl.href,
+            icon: selectedIcon
+          };
+          saveBaseOverrides(overrides);
+          const updatedTool = { ...original, ...overrides[editingToolId] };
+          applyToolToCard(card, updatedTool);
+          closeDialog();
+          status.textContent = `${updatedTool.name} updated.`;
+          card.querySelector('.edit-tool').focus();
+          return;
+        }
+
         const tools = getTools();
-        if (editingToolId) {
+        if (editingToolId && editingToolType === 'custom') {
           const toolIndex = tools.findIndex((item) => item.id === editingToolId);
           if (toolIndex === -1) {
             errorMessage.textContent = 'This card could not be found. Please close the window and try again.';
@@ -892,6 +1182,7 @@
         document.querySelector(`[data-custom-tool-id="${tool.id}"] .custom-card-link`).focus();
       });
 
+      initializeBaseCards();
       renderSavedTools();
     })();
   </script>
