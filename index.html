@@ -431,6 +431,39 @@
   .field textarea{ min-height: 84px; }
   .field input::placeholder,
   .field textarea::placeholder{ color: var(--text-faint); }
+  .link-behavior{ border: 0; margin: 0 0 20px; padding: 0; }
+  .link-behavior legend{
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .link-behavior-options{ display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .link-behavior-option{
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    min-height: 58px;
+    padding: 11px 12px;
+  }
+  .link-behavior-option:has(input:checked){
+    background: rgba(255,95,0,.1);
+    border-color: var(--mc-orange);
+  }
+  .link-behavior-option input{
+    accent-color: var(--mc-orange);
+    flex: 0 0 auto;
+    height: 16px;
+    margin: 0;
+    width: 16px;
+  }
+  .link-behavior-option span{ display: grid; gap: 2px; }
+  .link-behavior-option b{ color: var(--text); font-size: 13px; font-weight: 600; }
+  .link-behavior-option small{ color: var(--text-faint); font-size: 11px; line-height: 1.3; }
   .icon-fieldset{ border: 0; margin: 0 0 24px; }
   .icon-fieldset legend{ margin-bottom: 10px; }
   .icon-grid{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
@@ -515,6 +548,7 @@
     .add-tool-button{ justify-content: center; }
     .card-actions{ opacity: 1; }
     .dialog-shell{ padding: 22px; }
+    .link-behavior-options{ grid-template-columns: 1fr; }
     .icon-grid{ grid-template-columns: repeat(3, 1fr); }
   }
 
@@ -704,6 +738,20 @@
         <input id="tool-url-input" name="url" inputmode="url" placeholder="https://example.com" required>
       </div>
 
+      <fieldset class="link-behavior">
+        <legend>When someone opens this card</legend>
+        <div class="link-behavior-options">
+          <label class="link-behavior-option">
+            <input type="radio" name="linkTarget" value="new-tab" checked>
+            <span><b>Open in a new tab</b><small>Keep the Mastercard Hub open</small></span>
+          </label>
+          <label class="link-behavior-option">
+            <input type="radio" name="linkTarget" value="same-tab">
+            <span><b>Open in this tab</b><small>Replace the Mastercard Hub</small></span>
+          </label>
+        </div>
+      </fieldset>
+
       <fieldset class="icon-fieldset">
         <legend>Icon</legend>
         <div class="icon-grid" id="icon-grid"></div>
@@ -746,6 +794,7 @@
       const nameInput = document.getElementById('tool-name-input');
       const descriptionInput = document.getElementById('tool-description-input');
       const urlInput = document.getElementById('tool-url-input');
+      const targetInputs = [...form.querySelectorAll('input[name="linkTarget"]')];
       const baseToolDefaults = new Map();
       let selectedIcon = 'link';
       let editingToolId = null;
@@ -840,6 +889,13 @@
       const applyToolToCard = (card, tool, updateIcon = true) => {
         const cardLink = card.querySelector('.custom-card-link');
         cardLink.href = tool.url;
+        if (tool.openInNewTab !== false) {
+          cardLink.target = '_blank';
+          cardLink.rel = 'noopener noreferrer';
+        } else {
+          cardLink.removeAttribute('target');
+          cardLink.removeAttribute('rel');
+        }
         cardLink.setAttribute('aria-label', `${tool.name}: ${tool.description}`);
         card.querySelector('.tool-name').textContent = tool.name;
         card.querySelector('.tool-desc').textContent = tool.description;
@@ -1096,6 +1152,7 @@
             name: cardLink.querySelector('.tool-name').textContent.trim(),
             description: cardLink.querySelector('.tool-desc').textContent.trim(),
             url: cardLink.getAttribute('href'),
+            openInNewTab: cardLink.getAttribute('target') === '_blank',
             icon: cardLink.dataset.icon || 'link',
             accent: cardLink.style.getPropertyValue('--card-accent') || '#ff5f00'
           };
@@ -1208,6 +1265,7 @@
         editingToolId = null;
         editingToolType = null;
         form.reset();
+        targetInputs.forEach((input) => { input.checked = input.value === 'new-tab'; });
         setSelectedIcon('link');
         dialogTitle.textContent = 'Add a new link';
         dialogSubtitle.textContent = 'Create a shortcut using the same style as the other tools.';
@@ -1223,6 +1281,8 @@
         nameInput.value = tool.name;
         descriptionInput.value = tool.description;
         urlInput.value = tool.url;
+        const openInNewTab = tool.openInNewTab !== false;
+        targetInputs.forEach((input) => { input.checked = input.value === (openInNewTab ? 'new-tab' : 'same-tab'); });
         setSelectedIcon(tool.icon);
         dialogTitle.textContent = 'Edit link';
         dialogSubtitle.textContent = 'Update the card details, destination, or icon.';
@@ -1248,6 +1308,7 @@
         const name = String(data.get('name') || '').trim();
         const description = String(data.get('description') || '').trim();
         const rawUrl = String(data.get('url') || '').trim();
+        const openInNewTab = data.get('linkTarget') !== 'same-tab';
 
         if (!name || !description || !rawUrl) {
           errorMessage.textContent = 'Please complete all fields.';
@@ -1275,6 +1336,7 @@
             name,
             description,
             url: parsedUrl.href,
+            openInNewTab,
             icon: selectedIcon
           };
           saveBaseOverrides(overrides);
@@ -1299,6 +1361,7 @@
             name,
             description,
             url: parsedUrl.href,
+            openInNewTab,
             icon: selectedIcon
           };
           tools[toolIndex] = updatedTool;
@@ -1315,6 +1378,7 @@
           name,
           description,
           url: parsedUrl.href,
+          openInNewTab,
           icon: selectedIcon,
           accent: accentColors[tools.length % accentColors.length]
         };
